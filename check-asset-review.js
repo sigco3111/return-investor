@@ -1,0 +1,35 @@
+const a=require('assert'),{review,inspectSnapshot,compareSnapshots}=require('./asset-review');
+const fresh=()=>({month:'1996-04',assetReviewBaseline:{version:1,source:'new-game',month:'1996-03',totalAssets:1000000},savingsLedger:[{month:'1996-04',amount:100000,basis:'test-net-savings-v1',reason:'진로 미정'}]});let tests=0;
+function test(fn){fn();tests++}
+test(()=>{const s=fresh(),raw=JSON.stringify(s),r=review(s,1200000);a.equal(r.recordedSavings,100000);a.equal(r.assetChangeRemainder,100000);a.equal(JSON.stringify(s),raw)});
+test(()=>{const s=fresh();delete s.assetReviewBaseline;a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.savingsLedger=[];a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.savingsLedger.push({...s.savingsLedger[0]});a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.savingsLedger[0].month='1996-05';a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.savingsLedger[0].amount=-1;a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.savingsLedger[0].amount=0;a.equal(review(s,1000000).assetChangeRemainder,0)});
+test(()=>{const s=fresh();s.savingsLedger[0].amount=NaN;a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.assetReviewBaseline.totalAssets=2000000;a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.assetReviewBaseline.version=2;a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();s.savingsLedger[0].basis='real-income';a.equal(review(s,1000000).available,false)});
+test(()=>{const s=fresh();a.equal(review(s,1000000).assetChangeRemainder,-100000)});
+test(()=>{const s=fresh();s.month='1996-03';s.savingsLedger=[];a.equal(review(s,1000000).months,0)});
+test(()=>{const s=fresh();a.equal(review(s,NaN).available,false)});
+test(()=>{const s=fresh();s.savingsLedger[0].reason='__proto__';a.equal(review(s,1100000).savingsByReason.__proto__,100000);a.equal({}.polluted,undefined)});
+function snap(){return JSON.parse(JSON.stringify(review(fresh(),1200000)))}
+test(()=>{const r=snap();a.deepEqual(inspectSnapshot(r,1200000),r)});
+test(()=>{a.equal(inspectSnapshot(null,1200000).available,false)});
+test(()=>{const r=snap();r.basis='real-return';a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();r.months++;a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();r.assetChangeRemainder++;a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();r.totalAssets=NaN;a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();r.recordedSavings=-1;a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();r.savingsByReason=[];a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();r.savingsByReason.fake=1;a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const r=snap();a.equal(inspectSnapshot(r,1300000).available,false)});
+test(()=>{const r=snap();r.endMonth='bad-date';a.equal(inspectSnapshot(r,1200000).available,false)});
+test(()=>{const s=fresh();s.month='1996-05';s.savingsLedger[0].amount=1e308;s.savingsLedger.push({...s.savingsLedger[0],month:'1996-05'});a.equal(review(s,1).available,false)});
+test(()=>{const r=snap(),q=snap();q.recordedSavings+=50;q.totalAssets+=50;q.savingsByReason['진로 미정']+=50;const c=compareSnapshots(r,1200000,q,1200050);a.equal(c.available,true);a.equal(c.differences.recordedSavings,50);a.equal(c.differences.assetChangeRemainder,0);a.equal(c.differences.totalAssets,50)});
+test(()=>{a.equal(compareSnapshots(null,1,snap(),1200000).available,false)});
+test(()=>{const r=snap(),raw=JSON.stringify(r);compareSnapshots(r,1200000,r,1200000);a.equal(JSON.stringify(r),raw)});
+console.log(JSON.stringify({syntheticUnitTests:tests,pass:true,normalUIEvidence:false}));

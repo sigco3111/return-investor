@@ -496,11 +496,23 @@
   function cashSummary() {
     const rows=state.cashEvents.rows;
     return {income:rows.reduce((v,r)=>v+r.income,0), paid:rows.reduce((v,r)=>v+r.paid,0),
-      unpaid:rows.reduce((v,r)=>v+r.living+r.tuition-r.paid,0), months:rows.length};
+      unpaid:rows.reduce((v,r)=>v+r.living+r.tuition-r.paid,0), months:rows.length, ...(state.cashAutomation?{automaticPaidMonths:state.cashAutomation.paidMonths.length}:{})};
   }
   function cashEndHtml() {
     if(!CASH_MODE)return '';
     const c=cashSummary();return '<p class="cash-ending-summary"><strong>미납 가상청구 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(totalAssets()-c.unpaid).toLocaleString()+'원</strong></p><p class="note">위 총자산은 미납 차감 전입니다. 보류한 비용이 면제된 것이 아니며 실제 진로우열이나 생계가능성 결과가 아닙니다.</p>';
+  }
+  function cashAutomationHtml() {
+    const policy=state.cashAutomation, paid=policy?policy.paidMonths:[];
+    return '<section class="cash-automation"><h4>생활 가상청구 처리 정책</h4><p class="note">현재 '+(policy&&policy.enabled?'켜짐':'꺼짐 · 직접 선택')+' / 자동납부 기록 '+paid.length+'개월. 켜면 다음 월부터 학비 없는 생활청구10만원만 사용가능현금이 충분할 때 자동납부합니다. 학비·현금부족·기존미납은 항상 직접 확인합니다. 예약금 사용·자동매도·대출은 없습니다. 원할 때 끌 수 있으며 켜고 끄는 것만으로 과거 청구나 현금은 바뀌지 않습니다.</p><button id="cash-auto-toggle" style="min-height:44px" '+(state.month>GAME_END?'disabled':'')+'>'+(policy&&policy.enabled?'생활청구 자동납부 끄기':'조건을 읽고 생활청구 자동납부 켜기')+'</button></section>';
+  }
+  function toggleCashAutomation() {
+    if(storageWriteBlocked||storageReadBlocked||!CASH_MODE||state.month>GAME_END)return;
+    const old=state.cashAutomation,enabled=!(old&&old.enabled);
+    if(!confirm(enabled?'다음 월부터 학비 없는 생활가상청구10만원만 현금이 충분하면 자동납부할까요? 학비·현금부족·기존미납은 직접 확인하며 예약금·자동매도·대출을 쓰지 않습니다. 현재 청구는 바꾸지 않습니다.':'다음 월부터 생활가상청구 자동납부를 끌까요? 이미 납부한 청구와 현재 현금은 바꾸지 않습니다.'))return;
+    if(storageWriteBlocked||storageReadBlocked)return;
+    state.cashAutomation={version:1,enabled,enabledAfterMonth:state.month,paidMonths:old?old.paidMonths.slice():[]};
+    state.history.push({month:state.month,decisionMonth:state.month,choice:'cash-policy:'+(enabled?'enable-living':'disable-living')});if(save())render();
   }
   function cashEventsHtml() {
     const c=cashSummary(), gross=totalAssets();
@@ -511,8 +523,8 @@
       '<div class="row"><span>총자산(미납 차감 전)</span><strong>'+gross.toLocaleString()+'원</strong></div>' +
       '<div class="row"><span>미납 차감 시연순자산</span><strong>'+(gross-c.unpaid).toLocaleString()+'원</strong></div>' +
       '<p class="note">미납은 면제되지 않습니다. 시연순자산은 총자산-미납이며 투자수익률이 아닙니다. 총자산에는 예약현금·잠긴 매도평가가 포함되고 납부는 사용가능현금으로만 합니다. 보류는 재학·복무 일정에 영향을 주지 않는 최소시험이며 현실 학적·채무 정책이 아닙니다. 월수입과 청구 생성은 월진행1회, 납부·보류·재납부는 월진행 없이 처리합니다.</p>' +
-      '<details class="cash-event-ledger"><summary>현금사건 장부 · 최근12개월</summary>'+state.cashEvents.rows.slice(-12).reverse().map(r=>'<p class="note">'+esc(r.month)+' / 수입 +'+r.income.toLocaleString()+'원 / 생활 '+r.living.toLocaleString()+'원 / 학비 '+r.tuition.toLocaleString()+'원 / '+esc({due:'선택 대기',paid:'납부',deferred:'명시 보류'}[r.status])+' / 납부 '+r.paid.toLocaleString()+'원</p>').join('')+'</details>' +
-      (state.cashEvents.rows.some(r=>r.status==='deferred')?'<button id="cash-retry" style="min-height:44px">보류 미납을 다시 납부하기</button>':'')+'</div>';
+      '<details class="cash-event-ledger"><summary>현금사건 장부 · 최근12개월</summary>'+state.cashEvents.rows.slice(-12).reverse().map(r=>'<p class="note">'+esc(r.month)+' / 수입 +'+r.income.toLocaleString()+'원 / 생활 '+r.living.toLocaleString()+'원 / 학비 '+r.tuition.toLocaleString()+'원 / '+esc({due:'선택 대기',paid:'납부',deferred:'명시 보류'}[r.status])+' / 납부 '+r.paid.toLocaleString()+'원'+(state.cashAutomation&&state.cashAutomation.paidMonths.includes(r.month)?' · 명시 정책에 따른 자동납부':'')+'</p>').join('')+'</details>' +
+      (state.cashEvents.rows.some(r=>r.status==='deferred')?'<button id="cash-retry" style="min-height:44px">보류 미납을 다시 납부하기</button>':'')+cashAutomationHtml()+'</div>';
   }
   function cashDecision(row, action) {
     if(storageWriteBlocked || !CASH_MODE || row.status!=='due')return;
@@ -1393,7 +1405,12 @@
       const income=!militaryActive() && ((state.flags.studyPath==='parttime' && b0 && state.month<(b0.hsYear+3)+'-03') || (state.flags.career==='job' && state.flags.academicStatus==='graduated')) ? 300000 : 0;
       const tuition=!state.cashEvents.tuitionIssued && state.flags.academicStatus==='college' ? 800000 : 0;
       state.cash += income;
-      state.cashEvents.rows.push({month:state.month,income,living:100000,tuition,status:'due',paid:0});
+      const row={month:state.month,income,living:100000,tuition,status:'due',paid:0};
+      const auto=state.cashAutomation;
+      if(auto&&auto.enabled&&state.month>auto.enabledAfterMonth&&!tuition&&state.cash>=row.living){
+        state.cash-=row.living;row.paid=row.living;row.status='paid';auto.paidMonths.push(state.month);
+      }
+      state.cashEvents.rows.push(row);
       if(tuition)state.cashEvents.tuitionIssued=true;
       state.lastSavings=0;
     } else {
@@ -1596,7 +1613,7 @@
     if(!SCHOOL_CASH_MODE)rows+='<p><a id="school-cash-mode-entry" href="?start=school-calendar-trial&amp;economy=cash-events-trial">기존 여섯 저장키를 그대로 두고 고1 달력+현금사건 연결 시험 보기</a></p>';
     if(!SCHOOL_MODE&&!CASH_MODE)rows+='<p><a id="school-mode-entry" href="?start=school-calendar-trial">기존 저장을 그대로 두고 생년월별 고1 달력 시작 시험 보기</a></p>';
     el.innerHTML = rows;
-    if(CASH_MODE){const b=document.getElementById('cash-retry');if(b)b.onclick=()=>renderCashRepay();}
+    if(CASH_MODE){const b=document.getElementById('cash-retry');if(b)b.onclick=()=>renderCashRepay();const policy=document.getElementById('cash-auto-toggle');if(policy)policy.onclick=()=>toggleCashAutomation();}
     if (state.pendingOrders && state.pendingOrders.length) {
       for (const o of state.pendingOrders) {
         const u = productRule(o.product);
@@ -1625,6 +1642,7 @@
   function decisionInfo(choice) {
     const life={ 'life:scenario-study':'진학 시나리오로 시작 [과거 재학·일부 복무는 가정]', 'life:scenario-plain':'진로 이력 미정으로 시작', 'life:study':'공부·진학 선택', 'life:parttime':'고교 알바 경로 선택', 'life:job':'대학 졸업 후 취업 선택', 'life:fulltime':'대학 졸업 후 전업 선택', 'life:go-now':'바로 입대 선택', 'life:defer-1y':'입대1년 유예 선택 [시험가정]' };
     if(Object.prototype.hasOwnProperty.call(life,choice))return {group:'진로·복무 선택',label:life[choice]};
+    if(choice==='cash-policy:enable-living'||choice==='cash-policy:disable-living')return {group:'가상청구 선택',label:choice==='cash-policy:enable-living'?'다음월부터 생활청구 조건부 자동납부 정책 켜기 [임의값]':'다음월부터 생활청구 자동납부 정책 끄기 [임의값]'};
     if(choice==='discharge-ok')return {group:'자동일정 확인',label:'자동 전역일정 확인 [전역일을 고른 선택이 아님]'};
     let m=typeof choice==='string'&&choice.match(/^cash-event:(paid|deferred):(\d{4}-(?:0[1-9]|1[0-2]))$/);
     if(m)return {group:'가상청구 선택',label:m[2]+' 청구 '+(m[1]==='paid'?'전액 가상납부':'미납을 남기고 보류')+' [임의값]'};
@@ -1684,7 +1702,7 @@
     const lives = readLives();
     if (!lives) return;
     const causeLabel = { chaos: '역사 변경(카오스 한계)', 'demo-end': '시제품 구간 종료', 'natural-end': '인생 결산(전체 구간 종료)' };
-    const cashRecordHtml=l=>{const c=l.cashFlowSummary;if(!CASH_MODE)return '';if(!c||!['income','paid','unpaid'].every(k=>Number.isFinite(c[k])&&c[k]>=0)||!Number.isInteger(c.months)||c.months<0||c.months>(SCHOOL_CASH_MODE&&l.schoolStart?((2026-Number(l.schoolStart.startMonth.slice(0,4)))*12+10-Number(l.schoolStart.startMonth.slice(5))):367)||!Number.isFinite(l.totalAssets))return '<p class="note">현금사건 요약 근거 미확인 - 과거 금액을 추정하지 않아요.</p>';return '<p class="cash-record-summary note">별도 현금사건 시험 '+c.months+'개월 / 수입 +'+c.income.toLocaleString()+'원 / 납부 -'+c.paid.toLocaleString()+'원 / 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(l.totalAssets-c.unpaid).toLocaleString()+'원. 총자산 비교는 미납 차감 전이며 현실 진로우열이 아니에요.</p>'};
+    const cashRecordHtml=l=>{const c=l.cashFlowSummary;if(!CASH_MODE)return '';if(!c||!['income','paid','unpaid'].every(k=>Number.isFinite(c[k])&&c[k]>=0)||!Number.isInteger(c.months)||c.months<0||c.months>(SCHOOL_CASH_MODE&&l.schoolStart?((2026-Number(l.schoolStart.startMonth.slice(0,4)))*12+10-Number(l.schoolStart.startMonth.slice(5))):367)||!Number.isFinite(l.totalAssets))return '<p class="note">현금사건 요약 근거 미확인 - 과거 금액을 추정하지 않아요.</p>';return '<p class="cash-record-summary note">별도 현금사건 시험 '+c.months+'개월 / 수입 +'+c.income.toLocaleString()+'원 / 납부 -'+c.paid.toLocaleString()+'원 / 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(l.totalAssets-c.unpaid).toLocaleString()+'원.'+(Number.isInteger(c.automaticPaidMonths)&&c.automaticPaidMonths>=0&&c.automaticPaidMonths<=c.months?' 자동납부 기록 '+c.automaticPaidMonths+'개월.':' 자동납부 분리근거 미기록.')+' 총자산 비교는 미납 차감 전이며 현실 진로우열이 아니에요.</p>'};
     const pathLabel = { 'study': '진학 준비(학생)', 'parttime': '알바로 종잣돈 마련 중',
       'study-job': '진학 후 취업', 'study-fulltime': '진학 후 전업투자', 'parttime-fulltime': '알바 후 전업투자' };
     selected=selected.filter((i,n,arr)=>Number.isInteger(i)&&i>=0&&i<lives.length&&arr.indexOf(i)===n).slice(0,2);

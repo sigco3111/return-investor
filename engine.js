@@ -96,7 +96,7 @@
     const c=state.schoolStart,b=state.flags.birth,p=b&&ReturnSchoolCalendar.startPlan(b.year,b.month);
     return !!c&&Object.keys(c).sort().join(',')==='startMonth,version'&&c.version===1&&p?.ok&&b.hsYear===p.calendar.highYear&&c.startMonth===p.startMonth&&state.month>=c.startMonth&&state.month<='2026-11'&&state.assetReviewBaseline?.month===c.startMonth;
   }
-  function schoolTrialNote(short=false){if(short)return '<p class="note school-trial-note">고1 달력 시작 시험 · 별도 저장 · 금액/진학/복무는 임의 시험가정.1996-03 전 매매 차단, 이후도 기존 희소자료 시연입니다. 실제 역사·생활경제 완성본이 아닙니다.</p>';return '<p class="note school-trial-note">별도 고1 달력 시작 시험 - 통상진급의 학년을 계산했으며 개인 학적·실제 개학일은 아닙니다.1996-03 전은 선택 뉴스3건만 연결했고 상품접근·가격 근거가 부족해 매매를 막았습니다. 새 뉴스는 기존 진행을 되감아 재생하지 않아요. 1996-03 이후도 기존 희소·일부 미검증자료 시연입니다. 시작100만원과 순저축·진학/복무 일정은 임의 시험가정이며1990년대 생활경제 고증이 아닙니다. 자산분해는 이 시작월을 아직 지원하지 않아 계산하지 않습니다. <a href="?">기존1996시작 회귀로 돌아가기</a></p>';}
+  function schoolTrialNote(short=false){if(short)return '<p class="note school-trial-note">고1 달력 시작 시험 · 별도 저장 · 금액/진학/복무는 임의 시험가정.1996-03 전 매매 차단, 이후도 기존 희소자료 시연입니다. 실제 역사·생활경제 완성본이 아닙니다.</p>';return '<p class="note school-trial-note">별도 고1 달력 시작 시험 - 통상진급의 학년을 계산했으며 개인 학적·실제 개학일은 아닙니다.1996-03 전은 일부 선택 뉴스만 연결했고 상품접근·가격 근거가 부족해 매매를 막았습니다. 새 뉴스는 기존 진행을 되감아 재생하지 않아요. 1996-03 이후도 기존 희소·일부 미검증자료 시연입니다. 시작100만원과 순저축·진학/복무 일정은 임의 시험가정이며1990년대 생활경제 고증이 아닙니다. 자산분해는 이 시작월을 아직 지원하지 않아 계산하지 않습니다. <a href="?">기존1996시작 회귀로 돌아가기</a></p>';}
   function renderBirthSelect() {
     vnScene('life');
     if(SCHOOL_MODE){document.querySelector('header p').textContent='고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성';}

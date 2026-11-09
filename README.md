@@ -15,7 +15,9 @@
 
 ## 실행과 데이터 제외 범위
 
-현재 공개본은 필수 `data/`와 관련 연구원문을 아직 포함하지 않습니다. 데이터는 파일별로 공개범위를 검토 중입니다. 직접 만든 턴·상품정의, 사실 요약·날짜와 외부 원문·사진·연속 시세표를 구분하며, 외부 출처라는 이유만으로 모두 같은 권리로 취급하지 않습니다. 가격표의 혼합 출처와 금리 연속표의 원천·재배포 조건은 추가 확인 중입니다. 직접 생성한 배경·인물 이미지12종은 이제 `assets/`에 포함하며 해당 디렉터리의 [MIT License](assets/LICENSE)를 적용합니다. 이미지 목록·무결성은 [assets/README.md](assets/README.md)를 참고하세요. 외부 기사사진이나 데이터 권리를 재허가하는 것이 아닙니다. 본게임이 읽는 `data/events.json`, `data/prices.json`, `data/turns.json`, `data/unlocks.json`, `data/rates.json`이 없으므로 **이 저장소만 내려받아서는 본게임을 정상 실행할 수 없습니다.** `index.html`은 여전히 코드 검토용이며 필요한 데이터가 빠져 정상 플레이할 수 없습니다. 데이터가 빠진 상태를 빈 시장이나 실제 역사 데이터로 대체하지 않았습니다.
+현재 공개본에는 `data/turns.json`(직접 작성한 턴 규칙, 해당 파일 MIT)과 `data/rates.json`(한국은행 ECOS 저축성수신366개월, 출처명시 조건)을 공개했습니다. 금리는 공식 조회표와366개 모두 대조했고 수치차이는0입니다. 최초공표일과 실제 개인 상품금리는 미확인입니다. 금리에 MIT를 부여하지 않습니다. 파일별 조건은 [data/README.md](data/README.md)를 참고하세요.
+
+직접 생성한 배경·인물 이미지12종은 `assets/`에 포함하며 [MIT License](assets/LICENSE)를 적용합니다. 이미지 목록·무결성은 [assets/README.md](assets/README.md)를 참고하세요. 외부 기사사진이나 데이터 권리를 재허가하는 것이 아닙니다. 필수 `data/events.json`, `data/prices.json`, `data/unlocks.json`, `data/early-school-news.json`은 아직 포함하지 않아 **이 저장소만 내려받아서는 본게임을 정상 실행할 수 없습니다.** 가격표의 혼합 출처와 뉴스 표현 등은 파일별로 검토 중입니다. `index.html`은 여전히 코드 검토용입니다. 데이터가 빠진 상태를 빈 시장이나 임의 역사 데이터로 대체하지 않았습니다.
 
 독립 실험은 `tuition-choice-lab.html`을 브라우저에서 별도로 열어 볼 수 있지만 본게임이 아닙니다. 공개 플레이 사이트나 GitHub Pages는 이번 등록에 포함하지 않습니다.
 

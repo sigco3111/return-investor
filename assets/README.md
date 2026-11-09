@@ -16,7 +16,9 @@
 | `bg-office-later-ps1.png` | `db20068e6a9db599ef51d9d20c425892030f3e0f6fd1dc7c3fb1a2dcb7b65697` |
 | `bg-office-ps1.png` | `b5ae054258ed2dcf9dca627a7a94d6ff8ddf217b2daef41cfaf432924ca2a098` |
 | `bg-studio-ps1.png` | `7b5c628edf3f502fed3da8e4eb012f70ddae76db01e3a04f3d04a3cdf4c327b1` |
-| `bg-university-ps1.png` | `ac2cfa7264a9d2457a1e18639a982b2660a20f94a8b86e55d76867d77e55e5b6` |
+| `13-bg-university-ps1.png` | `ac2cfa7264a9d2457a1e18639a982b2660a20f94a8b86e55d76867d77e55e5b6` |
 | `char-adult.png` | `605c0b5afda3ae8e499a2f58346ac1a6d99add0ff393f7f5503e820a16506595` |
 | `char-soldier.png` | `e563bd305b7f7b02e67ef46056749c51780308ef3a66928a5779c254b82d9676` |
 | `char-student.png` | `60e28aa7bee8c226de4db8c27de6957da9de6833f6132e393f623a30a7a227f0` |
+
+대학 배경의 공개 파일명은 `13-bg-university-ps1.png`입니다. 개발본의 `bg-university-ps1.png`와 바이트가 같은 원본이며, 재사용할 때 원하는 파일명으로 저장할 수 있습니다.

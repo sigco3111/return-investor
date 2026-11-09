@@ -1,0 +1,40 @@
+{
+  "types": {
+    "news": {
+      "steps": [
+        "해석",
+        "상품 선택",
+        "비중 결정"
+      ],
+      "target_seconds": [
+        90,
+        180
+      ]
+    },
+    "life": {
+      "steps": [
+        "상황 읽기",
+        "선택"
+      ],
+      "target_seconds": [
+        60,
+        120
+      ]
+    },
+    "quiet": {
+      "steps": [
+        "요약 읽기",
+        "정산 선택(리밸런싱/유지/다음 진입)"
+      ],
+      "target_seconds": [
+        30,
+        60
+      ]
+    }
+  },
+  "rules": {
+    "quiet_entry_max_months": 1,
+    "active_choice_required": true,
+    "settlement_attached": "분기·연말 뉴스/평온 턴에 단계로 부착"
+  }
+}

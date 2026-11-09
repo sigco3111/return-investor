@@ -3,7 +3,10 @@
    - 빈 시세 구간은 만들어 내지 않는다. 당시 서술과 회고 해설을 분리한다.
    - 매 턴 능동 선택 1개 이상: 유지/건너뛰기도 선택. 새 매매 강제 없음. */
 (function () {
-  const SAVE_KEY = 'regression-invest-save-v2';
+  const CASH_MODE = new URLSearchParams(location.search).get('economy') === 'cash-events-trial';
+  const MODEL_ID = CASH_MODE ? 'trial-cash-events-v1' : 'trial-net-savings-v1';
+  const SAVE_KEY = CASH_MODE ? 'regression-invest-cash-events-save-v1' : 'regression-invest-save-v2';
+  const LIVES_KEY = CASH_MODE ? 'regression-invest-cash-events-lives-v1' : 'regression-invest-lives';
 
   // A denied storage read is not an absent save. Do not show a new-game form
   // or claim preservation when even the original bytes cannot be retrieved.
@@ -16,8 +19,9 @@
   const legacySave = initialStorage.legacy;
   const loadedSnapshot = initialStorage.snapshot;
   let state = (loadedSnapshot.ok && loadedSnapshot.exists ? loadedSnapshot.state : null) || {
-    economyModel: ReturnEconomyPolicy.descriptor(),
+    economyModel: ReturnEconomyPolicy.descriptor(MODEL_ID),
     assetReviewBaseline: { version: 1, source: 'new-game', month: '1996-03', totalAssets: 1000000 },
+    ...(CASH_MODE ? {cashEvents:{version:1,tuitionIssued:false,rows:[]}} : {}),
     month: '1996-03',
     cash: 1000000,
     holdings: {},              // product -> {qty, avgPrice}
@@ -59,7 +63,7 @@
     prices.sort((a, b) => a.date.localeCompare(b.date));
     DATA = { events, prices, turns, unlocks, rates };
     if (!loadedSnapshot.ok) return showSaveConflict('저장 JSON 또는 기본 구조를 읽을 수 없어 진행하지 않았습니다. 새 게임으로 자동 대체하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
-    if (!ReturnEconomyPolicy.inspect(state).ok) return showEconomyConflict();
+    if (!ReturnEconomyPolicy.inspect(state, MODEL_ID).ok) return showEconomyConflict();
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     if (!loadedSnapshot.exists) {
       renderBirthSelect();
@@ -87,7 +91,8 @@
       '<p>생년월이 고1 시작 연도를 정합니다. 2008학년도까지 초등 취학 기준일이 3월 1일이라, 1·2월생은 전 해 출생아와 함께 1년 일찍 입학했어요(빠른년생, 2009학년도 폐지).</p>' +
       '<p><select id="by"></select> 년생 <select id="bm"></select> 월생</p>' +
       '<p class="note" id="birth-precision-note">일자는 받지 않는 월 단위 시연이에요. 정확한 생일에 따른 법정 나이·근로 자격을 판정하지 않아요.</p>' +
-      '<p class="note" id="hs-preview"></p>';
+      '<p class="note" id="hs-preview"></p>' +
+      (CASH_MODE ? '<div class="cash-model-intro"><h3>별도 현금사건 시험 회귀 [모든 금액 임의값]</h3><p>기존 저장·회귀기록과 다른 키에 새로 시작합니다. 기존 월 순저축은 적용하지 않아요. 시작100만원, 매월 생활 가상청구10만원(복무 중도 동일), 시험수입은 고교 알바·졸업취업 월30만원/그 외0원입니다. 최초 대학 재학월 진행에 학비 가상청구80만원을 한 번 냅니다. 실제 학교·급여·공제·학적규정이 아니에요.</p><p>수입은 월 진행 때 한 번 입금하고 청구를 선택 전에 보여줘요. 전액 납부 또는 명시 보류를 고릅니다. 부족하면 납부는 막고 미납을 남겨요. 보류는 학적연기나 채무면제를 뜻하지 않으며 이 시험에서는 재학 일정은 바꾸지 않아요. 미납은 총자산과 따로 표시하고 뒤에 다시 낼 수 있어요. 자동대출·매도·가족송금은 없어요. 전체 생계·장학·환급 모형이 아닌 최소연결 시험입니다.</p><label><input id="cash-consent" type="checkbox"> 이 임의 시험가정과 별도 저장으로 새 회귀 시작에 동의</label><p><a href="?">기존 시험순저축 회귀로 돌아가기</a></p></div>' : '<p><a id="cash-mode-entry" href="?economy=cash-events-trial">기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기</a></p>');
     const by = document.getElementById('by'), bm = document.getElementById('bm');
     for (let y = 1975; y <= 1985; y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; if (y === 1980) o.selected = true; by.appendChild(o); }
     for (let m = 1; m <= 12; m++) { const o = document.createElement('option'); o.value = m; o.textContent = m; if (m === 3) o.selected = true; bm.appendChild(o); }
@@ -102,7 +107,9 @@
     by.onchange = upd; bm.onchange = upd; upd();
     const go = document.createElement('button');
     go.textContent = '이 생년월로 회귀';
+    if(CASH_MODE){go.disabled=true;document.getElementById('cash-consent').onchange=e=>{go.disabled=!e.target.checked};}
     go.onclick = () => {
+      if(CASH_MODE&&!document.getElementById('cash-consent').checked)return;
       const y = Number(by.value), m = Number(bm.value);
       state.flags.birth = { year: y, month: m, hsYear: hsYear(y, m) };
       save();
@@ -114,10 +121,10 @@
 
   function save() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
-    if (!ReturnEconomyPolicy.inspect(state).ok) return showEconomyConflict();
+    if (!ReturnEconomyPolicy.inspect(state, MODEL_ID).ok) return showEconomyConflict();
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     // Identify the existing trial rules only on an actual save; never recalculate old money.
-    if (!Object.prototype.hasOwnProperty.call(state, 'economyModel')) state.economyModel = ReturnEconomyPolicy.descriptor();
+    if (!Object.prototype.hasOwnProperty.call(state, 'economyModel')) state.economyModel = ReturnEconomyPolicy.descriptor(MODEL_ID);
     if (DATA) {
       const next = DATA.events[state.eventIndex];
       const prev = DATA.events[state.eventIndex - 1];
@@ -239,6 +246,7 @@
   const DEMO_END = '2003-12'; // 시제품 데이터 구간 끝 (전체 게임 종료 2026-10과 별개)
   const GAME_END = '2026-10'; // 전체 게임 종료월 — 회귀 시점 직전까지 인생을 사는 구조 [1차 기획]
   function nextTurn() {
+    if(CASH_MODE && state.cashEvents.rows.some(r=>r.status==='due'))return {kind:'cash-due'};
     if (state.flags.gameOver === 'chaos') return { kind: 'gameover' };
     const finalDeferred = DATA.events[state.eventIndex];
     const pendingFinalConfirmation = finalDeferred && finalDeferred.event_month && finalDeferred.event_month <= GAME_END && finalDeferred.date.slice(0,7) <= state.month;
@@ -440,9 +448,59 @@
     if (label) label.textContent = '배경·스탠딩·대화창 분리 레이어 — 에셋은 생성 샘플 1차 (교실 1996·남학생 중립) [샘플 시연]';
   }
 
+  function cashSummary() {
+    const rows=state.cashEvents.rows;
+    return {income:rows.reduce((v,r)=>v+r.income,0), paid:rows.reduce((v,r)=>v+r.paid,0),
+      unpaid:rows.reduce((v,r)=>v+r.living+r.tuition-r.paid,0), months:rows.length};
+  }
+  function cashEndHtml() {
+    if(!CASH_MODE)return '';
+    const c=cashSummary();return '<p class="cash-ending-summary"><strong>미납 가상청구 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(totalAssets()-c.unpaid).toLocaleString()+'원</strong></p><p class="note">위 총자산은 미납 차감 전입니다. 보류한 비용이 면제된 것이 아니며 실제 진로우열이나 생계가능성 결과가 아닙니다.</p>';
+  }
+  function cashEventsHtml() {
+    const c=cashSummary(), gross=totalAssets();
+    return '<div class="cash-events-review"><h3>별도 현금사건 시험 v1 [임의값]</h3><p class="note">원래 월 순저축0/2만/10만원을 껐습니다. 시작100만원, 고교알바·졸업취업 월수입30만원/그 외·복무0원, 월생활 가상청구10만원(복무 포함), 최초 재학 월진행 학비가상청구80만원 한 번. 세금·장학·가족부담·실제학적효과는 없습니다.</p>' +
+      '<div class="row"><span>기록된 월수입 · '+c.months+'개월</span><strong>+'+c.income.toLocaleString()+'원</strong></div>' +
+      '<div class="row"><span>실제 선택한 가상납부</span><strong>-'+c.paid.toLocaleString()+'원</strong></div>' +
+      '<div class="row"><span>미납 가상청구 · 현재청구 포함</span><strong>'+c.unpaid.toLocaleString()+'원</strong></div>' +
+      '<div class="row"><span>총자산(미납 차감 전)</span><strong>'+gross.toLocaleString()+'원</strong></div>' +
+      '<div class="row"><span>미납 차감 시연순자산</span><strong>'+(gross-c.unpaid).toLocaleString()+'원</strong></div>' +
+      '<p class="note">미납은 면제되지 않습니다. 시연순자산은 총자산-미납이며 투자수익률이 아닙니다. 총자산에는 예약현금·잠긴 매도평가가 포함되고 납부는 사용가능현금으로만 합니다. 보류는 재학·복무 일정에 영향을 주지 않는 최소시험이며 현실 학적·채무 정책이 아닙니다. 월수입과 청구 생성은 월진행1회, 납부·보류·재납부는 월진행 없이 처리합니다.</p>' +
+      '<details class="cash-event-ledger"><summary>현금사건 장부 · 최근12개월</summary>'+state.cashEvents.rows.slice(-12).reverse().map(r=>'<p class="note">'+esc(r.month)+' / 수입 +'+r.income.toLocaleString()+'원 / 생활 '+r.living.toLocaleString()+'원 / 학비 '+r.tuition.toLocaleString()+'원 / '+esc({due:'선택 대기',paid:'납부',deferred:'명시 보류'}[r.status])+' / 납부 '+r.paid.toLocaleString()+'원</p>').join('')+'</details>' +
+      (state.cashEvents.rows.some(r=>r.status==='deferred')?'<button id="cash-retry" style="min-height:44px">보류 미납을 다시 납부하기</button>':'')+'</div>';
+  }
+  function cashDecision(row, action) {
+    if(storageWriteBlocked || !CASH_MODE || row.status!=='due')return;
+    const cost=row.living+row.tuition;
+    if(action==='paid'&&state.cash<cost)return;
+    if(!confirm(action==='paid'?'사용가능현금에서 '+cost.toLocaleString()+'원을 가상 납부할까요? 월은 진행하지 않습니다.':'가상청구 '+cost.toLocaleString()+'원을 미납으로 남길까요? 면제가 아니며 학적일정은 바꾸지 않습니다.'))return;
+    if(row.status!=='due'||(action==='paid'&&state.cash<cost))return;
+    if(action==='paid'){state.cash-=cost;row.paid=cost;}
+    row.status=action;
+    state.turnCount++;state.history.push({month:state.month,choice:'cash-event:'+action+':'+row.month});
+    if(save())render();
+  }
+  function renderCashDue() {
+    const row=state.cashEvents.rows.find(r=>r.status==='due');if(!row)return render();
+    const cost=row.living+row.tuition, short=Math.max(0,cost-state.cash);
+    vnScene('life');document.getElementById('unlock-area').innerHTML='';
+    document.getElementById('turn-card').innerHTML='<div class="date">'+esc(row.month)+' · 별도 현금사건 시험</div><h2>가상청구를 어떻게 처리할까</h2><p>이번 달 시험수입 +'+row.income.toLocaleString()+'원은 한 번 입금했습니다. 생활가상청구 '+row.living.toLocaleString()+'원'+(row.tuition?' + 최초재학 학비가상청구 '+row.tuition.toLocaleString()+'원':'')+'입니다. 전부 임의 시험값입니다.</p><p>납부액 '+cost.toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원 / 부족 '+short.toLocaleString()+'원.</p><p class="note">납부 전에 확인합니다. 예약현금·미체결매도는 사용할 수 없고 자동매도·대출·가족송금은 없습니다. 아래 자산표에서 대기주문을 명시 취소할 수 있어요. 보류하면 미납을 남기고 같은 달의 본게임을 계속하며, 이후 다시 낼 수 있습니다. 보류해도 이 최소시험의 재학 일정은 바꾸지 않습니다.</p>';
+    const box=document.getElementById('choices');box.innerHTML='';
+    const pay=document.createElement('button');pay.id='cash-pay';pay.textContent='전액 가상 납부 확인';pay.disabled=short>0;pay.onclick=()=>cashDecision(row,'paid');box.append(pay);
+    const defer=document.createElement('button');defer.id='cash-defer';defer.textContent='미납을 남기고 명시 보류';defer.onclick=()=>cashDecision(row,'deferred');box.append(defer);
+    renderPortfolio();
+  }
+  function renderCashRepay() {
+    if(storageWriteBlocked)return showStorageWriteUnavailable();
+    const rows=state.cashEvents.rows.filter(r=>r.status==='deferred'), cost=rows.reduce((v,r)=>v+r.living+r.tuition-r.paid,0);
+    document.getElementById('turn-card').innerHTML='<div class="date">'+state.month+' · 미납 다시 확인</div><h2>보류한 가상청구 납부</h2><p>보류 '+rows.length+'건 / 합계 '+cost.toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원. 일괄 전액만 납부하며 부족하면 진행할 수 없습니다. 현재 월의 선택대기 청구는 이 합계와 별도입니다.</p><p>원래 월수입·이자는 다시 적용하지 않고 월·뉴스·진로도 진행하지 않습니다. 기존 순저축 회귀는 건드리지 않습니다.</p>';
+    const box=document.getElementById('choices');box.innerHTML='';const pay=document.createElement('button');pay.id='cash-repay-confirm';pay.textContent='보류 미납 전액 납부 확인';pay.disabled=!rows.length||state.cash<cost;pay.onclick=()=>{if(storageWriteBlocked||state.cash<cost||rows.some(r=>r.status!=='deferred'))return;if(!confirm('보류 미납 '+cost.toLocaleString()+'원을 현금에서 가상 납부할까요?'))return;state.cash-=cost;rows.forEach(r=>{r.paid=r.living+r.tuition;r.status='paid'});state.history.push({month:state.month,choice:'cash-event:repay:'+rows.length});if(save())render()};box.append(pay);const cancel=document.createElement('button');cancel.id='cash-repay-cancel';cancel.textContent='취소 (게임으로 돌아가기)';cancel.onclick=()=>render();box.append(cancel);renderPortfolio();
+  }
+
   function render() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
     if (pending) { renderTrade(); renderPortfolio(); return; }
+    if(CASH_MODE&&state.cashEvents.rows.some(r=>r.status==='due'))return renderCashDue();
     const turn = nextTurn();
     effDate = turnEffDate(turn).date;
     effPostClose = turnEffDate(turn).postClose;
@@ -510,6 +568,7 @@
         '<h2>역사가 바뀌었습니다</h2>' +
         '<p>시장에 쌓인 영향(카오스 ' + state.chaos.toFixed(1) + '/100)이 한계를 넘어, 알고 있던 미래가 더 이상 유효하지 않게 됐다. 이 인생은 여기서 닫힙니다. 기록은 회귀 대시보드에 남습니다.</p>' +
         '<p class="note">카오스 수치와 한계는 전부 설계 제안이며 경제적 사실이 아니에요.</p>';
+      card.innerHTML+=cashEndHtml();
       renderChoices([{ id: 'record-and-reset', label: '기록을 남기고 새 회귀 시작' }], turn);
       renderPortfolio();
       return;
@@ -520,7 +579,9 @@
         '<p>회귀한 시점에 도달했습니다. 전체 게임은 2026년 10월에 인생이 닫혀요. 포지션은 강제 매도하지 않고 그 시점 평가액으로 결산해요 [설계 제안]. 기록은 회귀 대시보드에 남습니다.</p>' +
         '<p>총자산 ' + totalAssets().toLocaleString() + '원 · 턴 ' + state.turnCount + ' · 카오스 ' + state.chaos.toFixed(1) + '/100</p>' +
         ((state.pendingOrders || []).length ? '<p class="note">미체결 매수 예약금·매도 예약 수량도 총자산에 포함돼요. 기록을 남길 때 미체결 주문을 취소하고 예약금을 반환해 결산해요 [시연 규칙].</p>' : '');
-      appendSkipBanner(card);
+      if(CASH_MODE){const n=document.createElement('p');n.className='note';n.textContent='별도 현금사건 시험 회귀 [임의값] - 원래 순저축은 끄고 수입/가상청구/미납을 자산표에 별도로 표시합니다. 실제급여·학비·생활비 고증은 아니에요.';card.append(n);}
+    appendSkipBanner(card);
+      card.innerHTML+=cashEndHtml();
       renderChoices([
         { id: 'record-and-reset-end', label: '기록을 남기고 새 회귀 시작' },
         { id: 'end-continue', label: '계속 둘러보기 (새 뉴스 없음)' }
@@ -534,6 +595,7 @@
         '<h2>기본 시연 구간을 마쳤습니다</h2>' +
         '<p>기본 시연 구간은 1996년 3월~2003년 12월입니다. 계속하면 2026년 10월까지의 확장 자료로 이어져요. 확장 구간에도 일부 뉴스와 가격이 있지만 연도별 공백·미검증 자료가 남아 있습니다. 여기서 기록을 남기고 새 회귀를 시작할 수도 있어요.</p>' +
         '<p>총자산 ' + totalAssets().toLocaleString() + '원 · 턴 ' + state.turnCount + ' · 카오스 ' + state.chaos.toFixed(1) + '/100</p>';
+      card.innerHTML+=cashEndHtml();
       renderChoices([
         { id: 'record-and-reset-demo', label: '기록을 남기고 새 회귀 시작' },
         { id: 'demo-continue', label: '계속 둘러보기 (확장 자료 · 2026년 10월까지)' }
@@ -562,10 +624,10 @@
       card.innerHTML =
         '<div class="date">' + ev.date + (ev.event_month ? ' 노출 (사건월 ' + ev.event_month + ' · 정확일 미확인, 익월로 보수적 배치)' : ev.event_date ? ' 노출 (사건일 ' + ev.event_date + ' · 보수적 발표/확인일 배치)' : '') + ' · ' + (turn.kind === 'life' ? '진로·생활' : '뉴스') + (effPostClose ? ' · 장 마감 후 판단' : '') + '</div>' +
         '<h2>' + esc(ev.card_title) + '</h2>' +
-        '<p>' + esc(ev.card_summary) + '</p>' +
+        '<p>' + esc(CASH_MODE && turn.kind==='life' && ev.id==='life-grad' ? '취업 또는 전업을 고릅니다. 이 별도 시험에서는 취업 월수입30만원/전업0원이며 매월 생활가상청구10만원은 그대로입니다. 실제급여·생계가능성 규칙이 아니에요.' : CASH_MODE && turn.kind==='life' && ev.id==='life-hs1' ? '공부 또는 알바를 고릅니다. 이 별도 시험에서는 고교 알바 월수입30만원/학생0원이며 월생활 가상청구10만원은 두 경로 모두 있습니다. 실제 학업/근로 모형이 아니에요.' : ev.card_summary) + '</p>' +
         (ev.historical_reconstruction ? '<p class="muted">역사 재구성 [시연]: 당시 기사 원문 미확보. 후년 기록을 바탕으로 한 카드이며 정확한 당시 보도시각을 재현하지 않습니다.</p>' : '') +
         (ev.impact_tags.length ? '<div class="tags">영향: ' + ev.impact_tags.join(', ') + '</div>' : '') +
-        settlementNote(turn) + sourceDetails(ev) + lifeOutlookHtml(turn) + (turn.kind === 'life' && ['life-scenario','life-hs1','life-grad'].includes(ev.id) ? '<p class="note">생활 흐름 [미완성]: 현재는 시험용 순저축만 더하며 생활비·학비·세금·임금의 별도 흐름은 계산하지 않아요. 전업의 생활비 차감도 아직 없어요. 전업 자산 하한 1,200만 원은 월 100만 원×12개월이라는 시험값이지 실제 생활 가능성 판정이 아닙니다.</p>' : '');
+        settlementNote(turn) + sourceDetails(ev) + lifeOutlookHtml(turn) + (!CASH_MODE && turn.kind === 'life' && ['life-scenario','life-hs1','life-grad'].includes(ev.id) ? '<p class="note">생활 흐름 [미완성]: 현재는 시험용 순저축만 더하며 생활비·학비·세금·임금의 별도 흐름은 계산하지 않아요. 전업의 생활비 차감도 아직 없어요. 전업 자산 하한 1,200만 원은 월 100만 원×12개월이라는 시험값이지 실제 생활 가능성 판정이 아닙니다.</p>' : '');
       if (ev.unlock && !state.unlocksSeen.includes(ev.unlock)) {
         const prod = DATA.unlocks.find(u => u.product === ev.unlock);
         if (prod) {
@@ -575,7 +637,7 @@
       }
       if (turn.kind === 'life' && ev.choices) {
         // 진로·입대는 실제 선택으로만 완료. 일반 hold는 동적 사건을 완료하지 못해 같은 화면에 턴만 쌓이던 오류가 있었다.
-        renderChoices(ev.choices.map(c => ({ id: 'life:' + c.id, label: c.label })), turn);
+        renderChoices(ev.choices.map(c => ({ id: 'life:' + c.id, label: CASH_MODE&&c.id==='job'?'취업 - 다음 달부터 시험수입30만원':CASH_MODE&&c.id==='study'?'공부 집중 - 시험수입0원/생활가상청구10만원':CASH_MODE&&c.id==='parttime'?'알바 병행 - 고교시험수입30만원/생활가상청구10만원':CASH_MODE&&c.id==='fulltime'?'전업 투자 - 시험수입0원/생활가상청구10만원':c.label })), turn);
         if (ev.id === 'life-grad') { // 전업 해금 게이트: 자산 하한(생활비 12개월분) 미달이면 전업 선택 불가 [시험용 가정 — 시연 설계]
           const btn = [...document.getElementById('choices').children].find(x => x.textContent.includes('전업 투자'));
           if (btn && totalAssets() < FULLTIME_GATE) {
@@ -613,6 +675,7 @@
         b0.textContent = '리밸런싱 불가 — 직장인은 분기 정산 전용 턴에서만 주문 [설계 제안]';
       }
     }
+    if(CASH_MODE){const n=document.createElement('p');n.className='note';n.textContent='별도 현금사건 시험 회귀 [임의값] - 원래 순저축은 끄고 수입/가상청구/미납을 자산표에 별도로 표시합니다. 실제급여·학비·생활비 고증은 아니에요.';card.append(n);}
     appendSkipBanner(card);
     renderPortfolio();
     document.getElementById('footnote').textContent =
@@ -623,6 +686,7 @@
 
   // Read-only map of the rules already implemented. No forecast, new fee, or state write.
   function lifeOutlookHtml(turn) {
+    if(CASH_MODE)return '<p class="note">현금사건 시험모형은 기존 순저축을 적용하지 않아요. 월수입·가상청구·미납은 자산표에서 구분합니다. 재학·복무·주문기회/전업하한은 기존 시험규칙이며 보류가 학적을 바꾸지는 않습니다.</p>';
     if (turn.kind !== 'life' || !turn.event || !['life-hs1', 'life-grad', 'life-scenario'].includes(turn.event.id)) return '';
     const id = turn.event.id, b = state.flags.birth;
     const row = (title, text) => '<section style="padding:10px 0;border-top:1px solid #ddd;overflow-wrap:anywhere"><h3 style="font-size:1rem;margin:0 0 6px">' + esc(title) + '</h3><p style="margin:0">' + esc(text) + '</p></section>';
@@ -702,7 +766,7 @@
       if (!arrive && state.month > GAME_END) arrive = 'natural-end';
       const to = state.month;
       state = savedState;
-      const kindLabel = { news: '뉴스', life: '진로·생활', discharge: '전역', 'demo-end': '시제품 구간 종료', 'natural-end': '인생 결산', gameover: '게임 종료(카오스)' };
+      const kindLabel = { 'cash-due':'가상생활비·학비 선택', news: '뉴스', life: '진로·생활', discharge: '전역', 'demo-end': '시제품 구간 종료', 'natural-end': '인생 결산', gameover: '게임 종료(카오스)' };
       card.innerHTML = '<div class="date">' + state.month + ' · 건너뛰기 미리보기</div><h2>여기까지 진행됩니다</h2>' +
         '<p>도착: ' + to + ' · ' + (kindLabel[arrive] || arrive || '구간 끝') + ' · ' + k + '개월 진행' +
         (ks ? ' · 넘기는 분기 정산 기회 ' + ks + '회를 지나칩니다(주문·리밸런싱 기회 포기)' : ' · 넘기는 정산 기회 없음') + '.</p>' +
@@ -950,13 +1014,13 @@
     if (id === 'record-and-reset' || id === 'record-and-reset-demo' || id === 'record-and-reset-end') {
       const causeMap = { 'record-and-reset': 'chaos', 'record-and-reset-demo': 'demo-end', 'record-and-reset-end': 'natural-end' };
       settlePendingOrders(); // 미체결 주문은 전부 취소 반환 후 결산 [시연 규칙]
-      const log = JSON.parse(localStorage.getItem('regression-invest-lives') || '[]');
+      const log = JSON.parse(localStorage.getItem(LIVES_KEY) || '[]');
       log.push({
         ended: id === 'record-and-reset-end' ? GAME_END : state.month, observationMonth: state.month, turnCount: state.turnCount,
-        totalAssets: totalAssets(), assetReview: ReturnAssetReview.review(state, totalAssets()), cause: causeMap[id],
+        totalAssets: totalAssets(), assetReview: CASH_MODE?{available:false,reason:'separate-cash-events-model'}:ReturnAssetReview.review(state, totalAssets()), ...(CASH_MODE?{cashFlowSummary:cashSummary()}:{}), cause: causeMap[id],
         path: state.flags.studyPath ? (state.flags.studyPath + (state.flags.career ? '-' + state.flags.career : (state.flags.studyPath === 'parttime' ? '-fulltime' : ''))) : null, chaos: state.chaos
       });
-      localStorage.setItem('regression-invest-lives', JSON.stringify(log));
+      localStorage.setItem(LIVES_KEY, JSON.stringify(log));
       localStorage.removeItem(SAVE_KEY);
       location.reload();
       return;
@@ -1095,6 +1159,7 @@
   const SAVINGS_BASE = 100000;
   const FULLTIME_GATE = 12000000; // 전업 해금 자산 하한 = 생활비 12개월분 [시험용 가정: 월 100만원 플레이스홀더 — 생활경제 자료 검토 중]
   function monthlySavings() {
+    if(CASH_MODE)return 0;
     if (militaryActive()) return 0;
     const b = state.flags.birth;
     if (!b) return SAVINGS_BASE;
@@ -1200,7 +1265,7 @@
 
   function advanceMonth() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
-    if (!ReturnEconomyPolicy.inspect(state).ok) return showEconomyConflict();
+    if (!ReturnEconomyPolicy.inspect(state, MODEL_ID).ok) return showEconomyConflict();
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     const [y, m] = state.month.split('-').map(Number);
     const nm = m === 12 ? [y + 1, 1] : [y, m + 1];
@@ -1219,11 +1284,20 @@
       }
     }
     tryFillOrders(); // 월 진행 중 새로 관측된 지점에서 미체결 주문 체결 [지연체결 시연 모형]
+    if(CASH_MODE){
+      const income=!militaryActive() && ((state.flags.studyPath==='parttime' && b0 && state.month<(b0.hsYear+3)+'-03') || (state.flags.career==='job' && state.flags.academicStatus==='graduated')) ? 300000 : 0;
+      const tuition=!state.cashEvents.tuitionIssued && state.flags.academicStatus==='college' ? 800000 : 0;
+      state.cash += income;
+      state.cashEvents.rows.push({month:state.month,income,living:100000,tuition,status:'due',paid:0});
+      if(tuition)state.cashEvents.tuitionIssued=true;
+      state.lastSavings=0;
+    } else {
     const sv = monthlySavings();
     if (sv > 0) { state.cash += sv; state.lastSavings = sv; } else { state.lastSavings = 0; }
     // 새 기능 도입 후 실제로 진행한 월만 기록. 구 저장의 과거 수입·지출을 역산하지 않는다.
     state.savingsLedger = state.savingsLedger || [];
     state.savingsLedger.push({ month: state.month, amount: sv, reason: militaryActive() ? '복무 중' : state.flags.career === 'job' && state.flags.academicStatus === 'graduated' ? '졸업 후 취업' : state.flags.studyPath === 'parttime' && b0 && state.month < (b0.hsYear + 3) + '-03' ? '고교 알바' : sv > 0 ? '진로 미정 시작 규칙' : '정기 순저축 없음', basis: 'test-net-savings-v1' });
+    }
     // 이자 누적 상품: 기존 계산식 그대로 적용하고 실제 반영한 회차만 기록한다.
     const interestEntries = [];
     for (const [p, h] of Object.entries(state.holdings)) {
@@ -1369,12 +1443,13 @@
     }
     rows += '<div class="row"><span>코스피 최신 확보 지점</span><strong>' +
       (kp ? kp.value.toLocaleString() + ' (' + fmtPtDate(kp) + ')' : '지점 없음 (공백)') + ' · 관측일 ' + effDate + '</strong></div>';
-    rows += '<div class="row"><span>월 저축</span><span>' +
+    if(!CASH_MODE){rows += '<div class="row"><span>월 저축</span><span>' +
       (militaryActive() ? '복무 중 0원 [시험용 설계값]' : monthlySavings().toLocaleString() + '원 [시험용 설계값]') + '</span></div>';
     rows += '<div class="row"><span>생활비 차감</span><span>미구현 · 시험용 순저축만 반영</span></div>';
     rows += '<p class="note economy-model-note">생활경제 모형: 시험 순저축 v1 · 실제 급여·학비·세금별 현금흐름은 아직 연결하지 않았어요. 기존 기록을 실비 모형으로 바꾸지 않아요.</p>';
     rows += assetReviewHtml();
     rows += savingsLedgerHtml();
+    }else rows+=cashEventsHtml();
     rows += interestLedgerHtml();
     if (state.month > GAME_END) rows += '<p class="note ending-economic-boundary">경제 회차는 ' + GAME_END + '까지입니다. 결산 관측일을 위해 다음 달로 표시하더라도 추가 순저축·이자·주문 체결은 반영하지 않아요.</p>';
     rows += '<div class="row"><span>카오스</span><span>' + state.chaos.toFixed(1) + ' / 100 (월 +' + monthlyChaosAdd().toFixed(2) + (monthlyChaosAdd() < 1 ? ', 감소 구간' : '') + ') [설계 제안 수치]</span></div>';
@@ -1392,7 +1467,7 @@
     }
     rows += '<div class="product-list"><div>해금 상품</div><ul>' +
       unlockedProducts().map(u => '<li>' + esc(u.name) + '</li>').join('') + '</ul></div>';
-    const lives = JSON.parse(localStorage.getItem('regression-invest-lives') || '[]');
+    const lives = JSON.parse(localStorage.getItem(LIVES_KEY) || '[]');
     rows += '<div class="row"><span>회귀 기록</span><span id="dash-link" style="cursor:pointer;text-decoration:underline">' +
       (lives.length ? lives.length + '건 — 대시보드 열기' : '대시보드 열기') + '</span></div>';
     if (state.pendingOrders && state.pendingOrders.length) {
@@ -1406,7 +1481,9 @@
         : ' · 투입금 ' + (Number.isFinite(latestFill.amount) ? latestFill.amount.toLocaleString() + '원' : '미확인');
       rows += '<div class="product-list"><div>최근 체결 [지연체결 시연]</div><p class="note">' + esc(u.name || latestFill.product) + ' ' + (latestFill.kind === 'buy-fill' ? '매수' : '매도') + ' · 체결 관측월 ' + esc(latestFill.month) + ' · 가격 기준일 ' + esc(latestFill.ptDate) + ' · 지점 ' + Number(latestFill.price).toLocaleString() + (latestFill.usableFrom ? ' · 시연 이용 가능일 ' + esc(latestFill.usableFrom) : '') + resultNote + '. 실제 거래 체결·세금·수수료를 재현한 것은 아니에요.</p></div>';
     }
+    rows+='<p><a href="'+(CASH_MODE?'?':'?economy=cash-events-trial')+'">'+(CASH_MODE?'기존 시험순저축 회귀로 돌아가기':'기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기')+'</a></p>';
     el.innerHTML = rows;
+    if(CASH_MODE){const b=document.getElementById('cash-retry');if(b)b.onclick=()=>renderCashRepay();}
     if (state.pendingOrders && state.pendingOrders.length) {
       for (const o of state.pendingOrders) {
         const u = productRule(o.product);
@@ -1438,13 +1515,14 @@
     const card = document.getElementById('turn-card');
     const box = document.getElementById('choices');
     box.innerHTML = '';
-    const lives = JSON.parse(localStorage.getItem('regression-invest-lives') || '[]');
+    const lives = JSON.parse(localStorage.getItem(LIVES_KEY) || '[]');
     const causeLabel = { chaos: '역사 변경(카오스 한계)', 'demo-end': '시제품 구간 종료', 'natural-end': '인생 결산(전체 구간 종료)' };
+    const cashRecordHtml=l=>{const c=l.cashFlowSummary;if(!CASH_MODE)return '';if(!c||!['income','paid','unpaid'].every(k=>Number.isFinite(c[k])&&c[k]>=0)||!Number.isInteger(c.months)||c.months<0||c.months>367||!Number.isFinite(l.totalAssets))return '<p class="note">현금사건 요약 근거 미확인 - 과거 금액을 추정하지 않아요.</p>';return '<p class="cash-record-summary note">별도 현금사건 시험 '+c.months+'개월 / 수입 +'+c.income.toLocaleString()+'원 / 납부 -'+c.paid.toLocaleString()+'원 / 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(l.totalAssets-c.unpaid).toLocaleString()+'원. 총자산 비교는 미납 차감 전이며 현실 진로우열이 아니에요.</p>'};
     const pathLabel = { 'study': '진학 준비(학생)', 'parttime': '알바로 종잣돈 마련 중',
       'study-job': '진학 후 취업', 'study-fulltime': '진학 후 전업투자', 'parttime-fulltime': '알바 후 전업투자' };
     selected=selected.filter((i,n,arr)=>Number.isInteger(i)&&i>=0&&i<lives.length&&arr.indexOf(i)===n).slice(0,2);
     let html = '<div class="date">회귀 기록</div><h2>지난 인생 대시보드</h2>';
-    if(lives.length>1){
+    if(lives.length>1 && !CASH_MODE){
       html+='<section class="life-comparison" aria-label="선택한 두 기록 비교"><h3>내가 고른 두 기록</h3><p>아래에서 두 기록을 골라 시작자금·시험 순저축·잔차를 함께 보세요. 선택은 이 화면에서만 유지되며 원본 기록을 바꾸지 않아요.</p>';
       html+='<p id="life-selection-status">'+selected.map(i=>'#'+(i+1)).join(' / ')+' · '+selected.length+'/2개 선택</p>';
       if(selected.length===2){
@@ -1463,10 +1541,10 @@
         const pathTxt = (l.path && pathLabel[l.path]) ? pathLabel[l.path] : '진로 미기록';
         html += '<div style="border-bottom:1px solid var(--line);padding:8px 0">' +
           '<div class="row"><span>#' + (i + 1) + ' · ' + l.ended + ' 종료</span><span>' + (causeLabel[l.cause] || l.cause || '기록 없음') + '</span></div>' +
-          '<div class="row life-record-assets"><span>' + pathTxt + '</span><strong>최종 자산 ' + (l.totalAssets || 0).toLocaleString() + '원' + (l === best ? ' · 최고 기록' : '') + '</strong></div>' +
-          assetReviewHtml(ReturnAssetReview.inspectSnapshot(l.assetReview,l.totalAssets),true) + (lives.length>1?'<button type="button" class="life-select" data-life-index="'+i+'" aria-pressed="'+selected.includes(i)+'" '+(!selected.includes(i)&&selected.length===2?'disabled':'')+'>'+ (selected.includes(i)?'#'+(i+1)+' 비교에서 빼기':'#'+(i+1)+' 비교에 넣기')+'</button>':'')+'</div>';
+          '<div class="row life-record-assets"><span>' + pathTxt + '</span><strong>최종 자산 ' + (l.totalAssets || 0).toLocaleString() + '원' + (l === best && !CASH_MODE ? ' · 최고 기록' : '') + '</strong></div>' + cashRecordHtml(l) +
+          (CASH_MODE?'':assetReviewHtml(ReturnAssetReview.inspectSnapshot(l.assetReview,l.totalAssets),true)) + (lives.length>1&&!CASH_MODE?'<button type="button" class="life-select" data-life-index="'+i+'" aria-pressed="'+selected.includes(i)+'" '+(!selected.includes(i)&&selected.length===2?'disabled':'')+'>'+ (selected.includes(i)?'#'+(i+1)+' 비교에서 빼기':'#'+(i+1)+' 비교에 넣기')+'</button>':'')+'</div>';
       });
-      html += '<p class="note">최고 기록은 시연 총자산 기준이며 투자 실력·수익률 순위가 아니에요. 진행 개월과 진로의 시험 순저축이 다르면 단순 비교할 수 없어요. 실제 학비·생활비·세금은 미연결이에요.</p><p class="note">고정 목표 자산은 없습니다. 최고 기록 갱신이 이 게임의 장기 목표예요. 기록은 이 기기에만 저장됩니다.</p>';
+      html += CASH_MODE ? '<p class="note">별도 현금사건 시험 회귀기록입니다. 총자산은 미납 차감 전입니다. 각 기록의 수입·납부·미납·시연순자산을 함께 읽고 실제 진로우열·투자실력·수익률 순위로 해석하지 마세요. 원래 시험순저축 모형의 기록과 합치지 않습니다. 이 기기에만 저장됩니다.</p>' : '<p class="note">최고 기록은 시연 총자산 기준이며 투자 실력·수익률 순위가 아니에요. 진행 개월과 진로의 시험 순저축이 다르면 단순 비교할 수 없어요. 실제 학비·생활비·세금은 미연결이에요.</p><p class="note">고정 목표 자산은 없습니다. 최고 기록 갱신이 이 게임의 장기 목표예요. 기록은 이 기기에만 저장됩니다.</p>';
     }
     card.innerHTML = html;
     card.querySelectorAll('.life-select').forEach(button=>{button.onclick=()=>{const i=Number(button.dataset.lifeIndex);renderDashboard(selected.includes(i)?selected.filter(x=>x!==i):[...selected,i]);document.querySelector('.life-select[data-life-index="'+i+'"]')?.focus()}});

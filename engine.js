@@ -13,7 +13,8 @@
   const initialStorage = (() => {
     try {
       return { ok: true, legacy: localStorage.getItem('regression-invest-save-v1'),
-        snapshot: ReturnEconomyPolicy.inspectRaw(localStorage.getItem(SAVE_KEY)) };
+        snapshot: ReturnEconomyPolicy.inspectRaw(localStorage.getItem(SAVE_KEY)),
+        lives: readLivesRaw() };
     } catch (_) { return { ok: false, legacy: null, snapshot: { ok: false, exists: null, state: null } }; }
   })();
   const legacySave = initialStorage.legacy;
@@ -35,6 +36,7 @@
 
   let DATA = null;
   let storageWriteBlocked = false;
+  let storageReadBlocked = false;
   let pending = null;          // {step, event, product} 주문 진행 상태
   // 턴 유효 관측일(YYYY-MM-DD). 뉴스·진로 턴은 이벤트 일자(월 정밀도면 그 달 1일), 평온 턴은 관측월 1일.
   // 이 날짜 이후의 가격 지점은 그 턴에서 보지 못한다(같은 달 미래 지점 차단 — 2026-06 턴에 2026-06-22 지점 미사용).
@@ -109,6 +111,7 @@
     go.textContent = '이 생년월로 회귀';
     if(CASH_MODE){go.disabled=true;document.getElementById('cash-consent').onchange=e=>{go.disabled=!e.target.checked};}
     go.onclick = () => {
+      if (!readLives()) return;
       if(CASH_MODE&&!document.getElementById('cash-consent').checked)return;
       const y = Number(by.value), m = Number(bm.value);
       state.flags.birth = { year: y, month: m, hsYear: hsYear(y, m) };
@@ -119,8 +122,20 @@
     document.getElementById('portfolio').innerHTML = '';
   }
 
+  function readLivesRaw() {
+    const raw = localStorage.getItem(LIVES_KEY);
+    const log = raw === null ? [] : JSON.parse(raw);
+    if (!Array.isArray(log) || log.some(row => !row || typeof row !== 'object' || Array.isArray(row))) throw new Error('Unavailable life archive');
+    return log;
+  }
+  function readLives() {
+    try { return readLivesRaw(); }
+    catch (_) { storageReadBlocked = true; pending = null; showStorageReadUnavailable(); return null; }
+  }
+
   function save() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     if (!ReturnEconomyPolicy.inspect(state, MODEL_ID).ok) return showEconomyConflict();
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     // Identify the existing trial rules only on an actual save; never recalculate old money.
@@ -187,7 +202,7 @@
     document.getElementById('unlock-area').innerHTML = '';
     const portfolio = document.getElementById('portfolio');
     portfolio.innerHTML = ''; portfolio.hidden = true;
-    document.getElementById('turn-card').innerHTML = '<div class="date">저장소 접근 확인 필요</div><h2>저장 내용을 읽을 수 없어 멈췄습니다</h2><p>브라우저 저장소에 접근할 수 없어 기존 저장의 유무와 원문을 확인하지 못했어요. 새 게임으로 대체하거나 저장을 쓰고 지우지 않았습니다.</p><p>원문을 읽지 못했으므로 별도 보존이나 원본 파일 받기가 완료됐다는 뜻은 아니에요. 브라우저의 사이트 저장소 권한을 확인한 뒤 다시 불러오세요. 사이트 데이터를 지우면 기존 저장을 잃을 수 있어요.</p>';
+    document.getElementById('turn-card').innerHTML = '<div class="date">저장소 접근 확인 필요</div><h2>저장 내용을 읽을 수 없어 멈췄습니다</h2><p>브라우저 저장소에 접근할 수 없어 기존 저장의 유무와 원문을 확인하지 못했어요. 이 읽기 실패를 없는 저장으로 취급해 새 게임으로 대체하거나 원문을 덮어쓰고 지우지 않았습니다.</p><p>원문을 읽지 못했으므로 별도 보존이나 원본 파일 받기가 완료됐다는 뜻은 아니에요. 브라우저의 사이트 저장소 권한을 확인한 뒤 다시 불러오세요. 사이트 데이터를 지우면 기존 저장을 잃을 수 있어요.</p>';
     const box = document.getElementById('choices'); box.innerHTML = '';
     const retry = document.createElement('button'); retry.textContent = '권한 확인 후 다시 불러오기';
     retry.onclick = () => location.reload(); box.append(retry);
@@ -276,7 +291,7 @@
     const hs = b.hsYear;
     const done = state.flags.lifeDone;
     // 시제품 시작(1996-03) 이전에 지난 진로는 이미 지나간 것으로 생략 [시연 제약]
-    // 1단 분기(고1): 공부·진학 vs 알바·전업투자 — 사용자 지정 ()
+    // 1단 분기(고1): 공부·진학 vs 알바·전업투자
     if (!done.hs1) {
       const d = hs + '-03-02';
       if (d.slice(0, 7) < '1996-03') {
@@ -498,7 +513,9 @@
   }
 
   function render() {
+    if (storageReadBlocked) return showStorageReadUnavailable();
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     if (pending) { renderTrade(); renderPortfolio(); return; }
     if(CASH_MODE&&state.cashEvents.rows.some(r=>r.status==='due'))return renderCashDue();
     const turn = nextTurn();
@@ -638,7 +655,7 @@
       if (turn.kind === 'life' && ev.choices) {
         // 진로·입대는 실제 선택으로만 완료. 일반 hold는 동적 사건을 완료하지 못해 같은 화면에 턴만 쌓이던 오류가 있었다.
         renderChoices(ev.choices.map(c => ({ id: 'life:' + c.id, label: CASH_MODE&&c.id==='job'?'취업 - 다음 달부터 시험수입30만원':CASH_MODE&&c.id==='study'?'공부 집중 - 시험수입0원/생활가상청구10만원':CASH_MODE&&c.id==='parttime'?'알바 병행 - 고교시험수입30만원/생활가상청구10만원':CASH_MODE&&c.id==='fulltime'?'전업 투자 - 시험수입0원/생활가상청구10만원':c.label })), turn);
-        if (ev.id === 'life-grad') { // 전업 해금 게이트: 자산 하한(생활비 12개월분) 미달이면 전업 선택 불가 [시험용 가정 — 시연 설계]
+        if (ev.id === 'life-grad') { // 전업 해금 게이트: 자산 하한(생활비 12개월분) 미달이면 전업 선택 불가 [시험용 가정]
           const btn = [...document.getElementById('choices').children].find(x => x.textContent.includes('전업 투자'));
           if (btn && totalAssets() < FULLTIME_GATE) {
             btn.disabled = true;
@@ -747,6 +764,7 @@
   // 단계2: 상품 선택 → 단계3: 비중
   function renderTrade() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     const card = document.getElementById('turn-card');
     const box = document.getElementById('choices');
     box.innerHTML = '';
@@ -1008,20 +1026,36 @@
 
   function choose(id, turn) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     if (turn && turn.kind === 'life' && !id.startsWith('life:')) { render(); return; } // unsupported generic hold cannot inflate turns
     if (id === 'demo-continue') { state.flags.demoEndShown = true; finishTurn(null, id); return; }
     if (id === 'end-continue') { state.flags.gameEndShown = true; finishTurn(null, id); return; }
     if (id === 'record-and-reset' || id === 'record-and-reset-demo' || id === 'record-and-reset-end') {
       const causeMap = { 'record-and-reset': 'chaos', 'record-and-reset-demo': 'demo-end', 'record-and-reset-end': 'natural-end' };
       settlePendingOrders(); // 미체결 주문은 전부 취소 반환 후 결산 [시연 규칙]
-      const log = JSON.parse(localStorage.getItem(LIVES_KEY) || '[]');
-      log.push({
+      const log = readLives();
+      if (!log) return;
+      if (!state.archiveTransferId) state.archiveTransferId = crypto.randomUUID();
+      if (!save()) return;
+      const record = {
+        transferId: state.archiveTransferId,
         ended: id === 'record-and-reset-end' ? GAME_END : state.month, observationMonth: state.month, turnCount: state.turnCount,
         totalAssets: totalAssets(), assetReview: CASH_MODE?{available:false,reason:'separate-cash-events-model'}:ReturnAssetReview.review(state, totalAssets()), ...(CASH_MODE?{cashFlowSummary:cashSummary()}:{}), cause: causeMap[id],
         path: state.flags.studyPath ? (state.flags.studyPath + (state.flags.career ? '-' + state.flags.career : (state.flags.studyPath === 'parttime' ? '-fulltime' : ''))) : null, chaos: state.chaos
-      });
-      localStorage.setItem(LIVES_KEY, JSON.stringify(log));
-      localStorage.removeItem(SAVE_KEY);
+      };
+      // A failed delete may leave the same completed life in both keys. Reuse
+      // its transfer ID after an explicit reload instead of archiving twice.
+      if (!log.some(row => row.transferId === record.transferId)) log.push(record);
+      try {
+        const raw = JSON.stringify(log);
+        localStorage.setItem(LIVES_KEY, raw);
+        if (localStorage.getItem(LIVES_KEY) !== raw) throw new Error('Archive readback mismatch');
+        localStorage.removeItem(SAVE_KEY);
+        if (localStorage.getItem(SAVE_KEY) !== null) throw new Error('Save deletion unconfirmed');
+      } catch (_) {
+        storageWriteBlocked = true; pending = null;
+        return showStorageWriteUnavailable();
+      }
       location.reload();
       return;
     }
@@ -1037,7 +1071,7 @@
         state.flags.deferredUsed = true;
         state.flags.enlistAt = addMonths(state.flags.enlistAt, 12);
       } else if (cid === 'scenario-study') {
-        // 시연용 시나리오(시연 설계, 플레이어 명시 선택): 진학 루트 확정·재학 진행 상태로 시작 [시연 제약]
+        // 시연용 시나리오(플레이어 명시 선택): 진학 루트 확정·재학 진행 상태로 시작 [시연 제약]
         const hs2 = state.flags.birth.hsYear;
         const enlist = (hs2 + 5) + '-06';
         state.flags.studyPath = 'study';
@@ -1099,6 +1133,7 @@
 
   function finishTurn(ev, choiceId) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     const completedSettlement = !ev && nextTurn().settlement;
     if (completedSettlement) state.flags.settledMonth = state.month;
     if (ev && !ev._dynamic) state.eventIndex++;
@@ -1157,7 +1192,7 @@
 
   // 월 저축: 금액은 전부 [시험용 설계값]. 당시 실제 소득·저축률 검증 전. 복무 중 0원.
   const SAVINGS_BASE = 100000;
-  const FULLTIME_GATE = 12000000; // 전업 해금 자산 하한 = 생활비 12개월분 [시험용 가정: 월 100만원 플레이스홀더 — 생활경제 자료 검토 중]
+  const FULLTIME_GATE = 12000000; // 전업 해금 자산 하한 = 생활비 12개월분 [시험용 가정: 월 100만원 플레이스홀더 — 실제 가계 지출 근거 미확인]
   function monthlySavings() {
     if(CASH_MODE)return 0;
     if (militaryActive()) return 0;
@@ -1229,6 +1264,7 @@
 
   function cancelOrder(id) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     const o = (state.pendingOrders || []).find(x => x.id === id);
     if (!o) return;
     if (o.kind === 'buy') {
@@ -1265,6 +1301,7 @@
 
   function advanceMonth() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     if (!ReturnEconomyPolicy.inspect(state, MODEL_ID).ok) return showEconomyConflict();
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     const [y, m] = state.month.split('-').map(Number);
@@ -1431,6 +1468,7 @@
 
   function renderPortfolio() {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     const el = document.getElementById('portfolio');
     const kp = priceAt('kospi', state.month);
     let rows = '<div class="row"><span>현금</span><strong>' + state.cash.toLocaleString() + '원</strong></div>';
@@ -1467,7 +1505,8 @@
     }
     rows += '<div class="product-list"><div>해금 상품</div><ul>' +
       unlockedProducts().map(u => '<li>' + esc(u.name) + '</li>').join('') + '</ul></div>';
-    const lives = JSON.parse(localStorage.getItem(LIVES_KEY) || '[]');
+    const lives = readLives();
+    if (!lives) return;
     rows += '<div class="row"><span>회귀 기록</span><span id="dash-link" style="cursor:pointer;text-decoration:underline">' +
       (lives.length ? lives.length + '건 — 대시보드 열기' : '대시보드 열기') + '</span></div>';
     if (state.pendingOrders && state.pendingOrders.length) {
@@ -1512,10 +1551,12 @@
   // 회귀 기록 대시보드 (1차 기획 확정 10: 단회성 인생 + 영구 기록)
   function renderDashboard(selected = []) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
+    if (storageReadBlocked) return showStorageReadUnavailable();
     const card = document.getElementById('turn-card');
     const box = document.getElementById('choices');
     box.innerHTML = '';
-    const lives = JSON.parse(localStorage.getItem(LIVES_KEY) || '[]');
+    const lives = readLives();
+    if (!lives) return;
     const causeLabel = { chaos: '역사 변경(카오스 한계)', 'demo-end': '시제품 구간 종료', 'natural-end': '인생 결산(전체 구간 종료)' };
     const cashRecordHtml=l=>{const c=l.cashFlowSummary;if(!CASH_MODE)return '';if(!c||!['income','paid','unpaid'].every(k=>Number.isFinite(c[k])&&c[k]>=0)||!Number.isInteger(c.months)||c.months<0||c.months>367||!Number.isFinite(l.totalAssets))return '<p class="note">현금사건 요약 근거 미확인 - 과거 금액을 추정하지 않아요.</p>';return '<p class="cash-record-summary note">별도 현금사건 시험 '+c.months+'개월 / 수입 +'+c.income.toLocaleString()+'원 / 납부 -'+c.paid.toLocaleString()+'원 / 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(l.totalAssets-c.unpaid).toLocaleString()+'원. 총자산 비교는 미납 차감 전이며 현실 진로우열이 아니에요.</p>'};
     const pathLabel = { 'study': '진학 준비(학생)', 'parttime': '알바로 종잣돈 마련 중',

@@ -539,8 +539,18 @@
   function renderCashRepay() {
     if(storageWriteBlocked)return showStorageWriteUnavailable();
     const rows=state.cashEvents.rows.filter(r=>r.status==='deferred'), cost=rows.reduce((v,r)=>v+r.living+r.tuition-r.paid,0);
-    document.getElementById('turn-card').innerHTML='<div class="date">'+state.month+' · 미납 다시 확인</div><h2>보류한 가상청구 납부</h2><p>보류 '+rows.length+'건 / 합계 '+cost.toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원. 일괄 전액만 납부하며 부족하면 진행할 수 없습니다. 현재 월의 선택대기 청구는 이 합계와 별도입니다.</p><p>원래 월수입·이자는 다시 적용하지 않고 월·뉴스·진로도 진행하지 않습니다. 기존 순저축 회귀는 건드리지 않습니다.</p>';
-    const box=document.getElementById('choices');box.innerHTML='';const pay=document.createElement('button');pay.id='cash-repay-confirm';pay.textContent='보류 미납 전액 납부 확인';pay.disabled=!rows.length||state.cash<cost;pay.onclick=()=>{if(storageWriteBlocked||state.cash<cost||rows.some(r=>r.status!=='deferred'))return;if(!confirm('보류 미납 '+cost.toLocaleString()+'원을 현금에서 가상 납부할까요?'))return;state.cash-=cost;rows.forEach(r=>{r.paid=r.living+r.tuition;r.status='paid'});state.history.push({month:state.month,decisionMonth:state.month,choice:'cash-event:repay:'+rows.length});if(save())render()};box.append(pay);const cancel=document.createElement('button');cancel.id='cash-repay-cancel';cancel.textContent='취소 (게임으로 돌아가기)';cancel.onclick=()=>render();box.append(cancel);renderPortfolio();
+    document.getElementById('turn-card').innerHTML='<div class="date">'+state.month+' · 미납 다시 확인</div><h2>보류한 가상청구 납부</h2><p>보류 '+rows.length+'건 / 합계 '+cost.toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원. 전체를 한 번에 내거나, 보류한 월을 직접 골라 한 건씩 전액 낼 수 있습니다. 자동 우선순위·한 청구의 부분납부는 없습니다. 현재 월의 선택대기 청구는 이 합계와 별도입니다.</p><p>원래 월수입·이자는 다시 적용하지 않고 월·뉴스·진로도 진행하지 않습니다. 기존 순저축 회귀는 건드리지 않습니다.</p>';
+    const box=document.getElementById('choices');box.innerHTML='';const pay=document.createElement('button');pay.id='cash-repay-confirm';pay.textContent='보류 미납 전액 납부 확인';pay.disabled=!rows.length||state.cash<cost;pay.onclick=()=>{if(storageWriteBlocked||state.cash<cost||rows.some(r=>r.status!=='deferred'))return;if(!confirm('보류 미납 '+cost.toLocaleString()+'원을 현금에서 가상 납부할까요?'))return;state.cash-=cost;rows.forEach(r=>{r.paid=r.living+r.tuition;r.status='paid'});state.history.push({month:state.month,decisionMonth:state.month,choice:'cash-event:repay:'+rows.length});if(save())render()};box.append(pay);
+    const label=document.createElement('label');label.htmlFor='cash-repay-month';label.textContent='다시 낼 보류 청구월 직접 선택';box.append(label);
+    const select=document.createElement('select');select.id='cash-repay-month';select.style.cssText='width:100%;min-height:44px;max-width:100%';
+    const empty=document.createElement('option');empty.value='';empty.textContent='청구월을 고르세요 (자동선택 없음)';select.append(empty);
+    rows.forEach(r=>{const option=document.createElement('option');option.value=r.month;option.textContent=r.month+' / '+(r.living+r.tuition-r.paid).toLocaleString()+'원'+(r.tuition?' (생활+학비)':' (생활)');select.append(option)});box.append(select);
+    const detail=document.createElement('p');detail.id='cash-repay-month-detail';detail.className='note';detail.setAttribute('aria-live','polite');box.append(detail);
+    const one=document.createElement('button');one.id='cash-repay-one';one.textContent='선택한 한 달 청구 전액 납부 확인';one.disabled=true;box.append(one);
+    const selected=()=>rows.find(r=>r.month===select.value&&r.status==='deferred');
+    select.onchange=()=>{const r=selected();one.disabled=!r||state.cash<r.living+r.tuition-r.paid;detail.textContent=r?'선택 '+r.month+' / 납부 '+(r.living+r.tuition-r.paid).toLocaleString()+'원 / 부족 '+Math.max(0,r.living+r.tuition-r.paid-state.cash).toLocaleString()+'원. 다른 월 미납은 남습니다.':'청구월을 직접 골라야 합니다. 아직 납부하지 않았습니다.'};select.onchange();
+    one.onclick=()=>{const r=selected();if(storageWriteBlocked||!r)return;const amount=r.living+r.tuition-r.paid;if(state.cash<amount)return;if(!confirm(r.month+' 보류 가상청구 '+amount.toLocaleString()+'원을 현금에서 납부할까요? 다른 월 미납은 그대로이며 월은 진행하지 않습니다.'))return;if(storageWriteBlocked||r.status!=='deferred'||state.cash<amount)return;state.cash-=amount;r.paid=r.living+r.tuition;r.status='paid';state.history.push({month:state.month,decisionMonth:state.month,choice:'cash-event:repay-month:'+r.month});if(save())render()};
+    const cancel=document.createElement('button');cancel.id='cash-repay-cancel';cancel.textContent='취소 (게임으로 돌아가기)';cancel.onclick=()=>render();box.append(cancel);renderPortfolio();
   }
 
   function render() {
@@ -1618,6 +1628,8 @@
     if(choice==='discharge-ok')return {group:'자동일정 확인',label:'자동 전역일정 확인 [전역일을 고른 선택이 아님]'};
     let m=typeof choice==='string'&&choice.match(/^cash-event:(paid|deferred):(\d{4}-(?:0[1-9]|1[0-2]))$/);
     if(m)return {group:'가상청구 선택',label:m[2]+' 청구 '+(m[1]==='paid'?'전액 가상납부':'미납을 남기고 보류')+' [임의값]'};
+    m=typeof choice==='string'&&choice.match(/^cash-event:repay-month:(\d{4}-(?:0[1-9]|1[0-2]))$/);
+    if(m)return {group:'가상청구 선택',label:m[1]+' 보류 청구 한 건 전액 재납부 [임의값]'};
     m=typeof choice==='string'&&choice.match(/^cash-event:repay:([1-9]\d*)$/);
     if(m)return {group:'가상청구 선택',label:'보류 청구 '+m[1]+'건 재납부 [임의값]'};
     m=typeof choice==='string'&&choice.match(/^(enter|enter-order|sell|sell-order):([a-z0-9]+):(\d+)$/);

@@ -2,14 +2,25 @@
 (function (root) {
   'use strict';
   const ID = 'trial-net-savings-v1';
-  function descriptor() { return { id: ID, schemaVersion: 1 }; }
-  function inspect(state) {
+  function descriptor(id = ID) { return { id, schemaVersion: 1 }; }
+  function inspect(state, expected = ID) {
     if (!state || typeof state !== 'object' || Array.isArray(state)) return {ok:false,reason:'invalid-state'};
-    if (!Object.prototype.hasOwnProperty.call(state, 'economyModel')) return {ok:true,legacy:true,id:ID};
+    if (!Object.prototype.hasOwnProperty.call(state, 'economyModel')) return expected===ID ? {ok:true,legacy:true,id:ID} : {ok:false,reason:'missing-cash-model'};
     const m=state.economyModel;
-    if (!m || typeof m!=='object' || Array.isArray(m) || Object.keys(m).sort().join(',')!=='id,schemaVersion' || m.id!==ID || m.schemaVersion!==1)
+    if (!m || typeof m!=='object' || Array.isArray(m) || Object.keys(m).sort().join(',')!=='id,schemaVersion' || m.id!==expected || ![ID,'trial-cash-events-v1'].includes(expected) || m.schemaVersion!==1)
       return {ok:false,reason:'unsupported-economic-model'};
-    return {ok:true,legacy:false,id:ID};
+    if(expected==='trial-cash-events-v1') {
+      const c=state.cashEvents, obj=x=>x&&typeof x==='object'&&!Array.isArray(x), month=x=>typeof x==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(x);
+      if(!obj(c)||Object.keys(c).sort().join(',')!=='rows,tuitionIssued,version'||Object.prototype.hasOwnProperty.call(state,'savingsLedger')||c.version!==1||typeof c.tuitionIssued!=='boolean'||!Array.isArray(c.rows)||c.rows.length>367) return {ok:false,reason:'invalid-cash-events'};
+      const seen=new Set(), idx=m=>Number(m.slice(0,4))*12+Number(m.slice(5))-1, start=idx('1996-03');
+      if(!month(state.month)||c.rows.length!==Math.min(idx(state.month),idx('2026-10'))-start)return {ok:false,reason:'cash-month-coverage'};
+      for(const [i,r] of c.rows.entries()){ 
+        if(!obj(r)||Object.keys(r).sort().join(',')!=='income,living,month,paid,status,tuition'||!month(r.month)||idx(r.month)!==start+i+1||seen.has(r.month)||![0,300000].includes(r.income)||r.living!==100000||![0,800000].includes(r.tuition)||!['due','paid','deferred'].includes(r.status)||!Number.isFinite(r.paid)||r.paid<0||r.paid>r.living+r.tuition||r.paid!==(r.status==='paid'?r.living+r.tuition:0)) return {ok:false,reason:'invalid-cash-row'};
+        seen.add(r.month);
+      }
+      if(c.rows.filter(r=>r.status==='due').length>1 || c.rows.some((r,i)=>r.status==='due'&&i!==c.rows.length-1) || c.rows.filter(r=>r.tuition>0).length>1 || c.tuitionIssued!==c.rows.some(r=>r.tuition>0)) return {ok:false,reason:'invalid-cash-sequence'};
+    }
+    return {ok:true,legacy:false,id:expected};
   }
   // This checks only the engine fields required to read a save, not full game validity.
   function inspectCore(state) {

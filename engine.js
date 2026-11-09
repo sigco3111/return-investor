@@ -565,7 +565,7 @@
         '<p>' + esc(ev.card_summary) + '</p>' +
         (ev.historical_reconstruction ? '<p class="muted">역사 재구성 [시연]: 당시 기사 원문 미확보. 후년 기록을 바탕으로 한 카드이며 정확한 당시 보도시각을 재현하지 않습니다.</p>' : '') +
         (ev.impact_tags.length ? '<div class="tags">영향: ' + ev.impact_tags.join(', ') + '</div>' : '') +
-        settlementNote(turn) + sourceDetails(ev) + (turn.kind === 'life' && ['life-scenario','life-hs1','life-grad'].includes(ev.id) ? '<p class="note">생활 흐름 [미완성]: 현재는 시험용 순저축만 더하며 생활비·학비·세금·임금의 별도 흐름은 계산하지 않아요. 전업의 생활비 차감도 아직 없어요. 전업 자산 하한 1,200만 원은 월 100만 원×12개월이라는 시험값이지 실제 생활 가능성 판정이 아닙니다.</p>' : '');
+        settlementNote(turn) + sourceDetails(ev) + lifeOutlookHtml(turn) + (turn.kind === 'life' && ['life-scenario','life-hs1','life-grad'].includes(ev.id) ? '<p class="note">생활 흐름 [미완성]: 현재는 시험용 순저축만 더하며 생활비·학비·세금·임금의 별도 흐름은 계산하지 않아요. 전업의 생활비 차감도 아직 없어요. 전업 자산 하한 1,200만 원은 월 100만 원×12개월이라는 시험값이지 실제 생활 가능성 판정이 아닙니다.</p>' : '');
       if (ev.unlock && !state.unlocksSeen.includes(ev.unlock)) {
         const prod = DATA.unlocks.find(u => u.product === ev.unlock);
         if (prod) {
@@ -619,6 +619,33 @@
       '턴 ' + state.turnCount + ' · 검증된 시세 지점만 표시' +
       (state.flags.birth ? ' · ' + state.flags.birth.year + '년 ' + state.flags.birth.month + '월생 · 고1 ' + state.flags.birth.hsYear + '년' : '') +
       (state.flags.demoScenario === 'pre1996-study' ? ' · 시연용 시나리오: 진학 루트 확정·재학 진행 상태로 시작 [시연 제약]' : '');
+  }
+
+  // Read-only map of the rules already implemented. No forecast, new fee, or state write.
+  function lifeOutlookHtml(turn) {
+    if (turn.kind !== 'life' || !turn.event || !['life-hs1', 'life-grad', 'life-scenario'].includes(turn.event.id)) return '';
+    const id = turn.event.id, b = state.flags.birth;
+    const row = (title, text) => '<section style="padding:10px 0;border-top:1px solid #ddd;overflow-wrap:anywhere"><h3 style="font-size:1rem;margin:0 0 6px">' + esc(title) + '</h3><p style="margin:0">' + esc(text) + '</p></section>';
+    const job = '취업: 졸업 후 다음 월 진행부터 월 ' + SAVINGS_BASE.toLocaleString() + '원 순저축 [시험값]. 복무 중은 0원. 뉴스 턴에서는 주문하지 못하고 분기 정산 전용 턴에서 주문합니다 [현재 설계].';
+    const ft = '전업 투자: 정기 순저축 0원. 뉴스·평온 턴에서 주문 기회가 있지만 실제 매매 가능 여부는 상품 해금·관측 시세·잔고·복무 제한에 따라 달라집니다. 생활비는 아직 차감하지 않으므로 0원 생활비로 살 수 있다는 뜻이 아닙니다.';
+    let body = '';
+    if (id === 'life-hs1') {
+      body += row('공부 → 진학 → 졸업 때 다시 선택', '학생·재학 중 정기 순저축 0원 [시험값]. 고교 이후 대학 재학 48개월을 채우면 취업과 전업 투자를 다시 고릅니다. 복무 중 재학 개월은 멈춥니다. 입학·졸업 일정은 현재 학제 가정이며 합격·취업 확률이나 공부 성과를 계산하지 않습니다.');
+      body += row('알바 → 졸업 뒤 전업 투자', '고교 기간 월 ' + Math.round(SAVINGS_BASE * 0.2).toLocaleString() + '원 순저축 [시험값]. 고교 졸업 뒤 정기 순저축은 0원이며 대학 졸업의 두 번째 선택은 없습니다. 별도 취업 수입을 자동으로 주지 않습니다.');
+      body += row('두 경로의 다음 갈림길', job + ' ' + ft + ' 대학 졸업의 전업 선택에는 총자산 ' + FULLTIME_GATE.toLocaleString() + '원 하한 [시험값]이 있고 알바 경로에는 같은 하한 검사가 없습니다. 이는 현재 구현 차이이며 현실적 우열이나 균형을 검증한 규칙이 아닙니다.');
+      body += row('복무와 달력', '현재 시험 일정은 진학 경로 ' + (b.hsYear + 5) + '년 6월, 알바 경로 ' + (b.hsYear + 3) + '년 8월에 입영 선택을 제시합니다. 바로 입대 시 26개월, 1년 유예 선택은 별도 시험가정입니다. 복무 중 순저축 0원·매수 비중 상한 30%이며 학적 개월이 멈춥니다. 군종·개인별 자격을 판정하지 않습니다.');
+    } else if (id === 'life-grad') {
+      body += row('취업을 고르면', job);
+      body += row('전업 투자를 고르면', ft);
+      const assets = totalAssets(), shortfall = Math.max(0, FULLTIME_GATE - assets);
+      body += row('지금의 전업 선택 조건', '시연 총자산 ' + assets.toLocaleString() + '원 / 시험 하한 ' + FULLTIME_GATE.toLocaleString() + '원. ' + (shortfall ? '현재 ' + shortfall.toLocaleString() + '원 부족해 전업 버튼이 잠깁니다.' : '현재 하한을 충족해 전업 버튼을 고를 수 있습니다.') + ' 총자산에는 상품 평가액과 주문 예약분이 포함되며 즉시 쓸 현금·실제 생활비 충당 능력과 같지 않습니다. 이 화면을 열어도 매도·대출·자산 이동은 하지 않습니다.');
+    } else {
+      body += row('진학 이력을 골라 시작', '고1 선택이 시제품 시작 전인 생년입니다. 진학 시나리오를 고르면 과거 진학·재학 개월과 일부 복무 이력을 시연용으로 가정합니다. 고교 시절의 현금·알바·성적을 소급 계산하지 않습니다. 대학 재학 48개월과 복무 휴학 뒤 졸업 선택에서 취업 또는 전업을 고릅니다.');
+      body += row('일반 시작을 고르면', '진로 이력은 미정입니다. 졸업·취업 선택을 임의로 채우지 않으며 현재의 진로 미정 시작 규칙에서는 복무 중이 아닐 때 월 ' + SAVINGS_BASE.toLocaleString() + '원 순저축이 더해집니다 [시험값]. 이 규칙과 진학 시나리오는 같은 조건 비교가 아닙니다.');
+      body += row('진학 시나리오의 졸업 뒤', job + ' ' + ft + ' 전업 선택에는 총자산 ' + FULLTIME_GATE.toLocaleString() + '원 하한 [시험값]이 있습니다.');
+    }
+    body += row('생활경제 연결 전 비어 있는 것', '급여·공제·생활비·학비·장학금·가족부담·실업을 개별 현금 사건으로 계산하지 않습니다. 미확인 비용을 0원으로 확정하거나 시험 순저축에서 다시 빼지 않았습니다. 선택별 미래 총자산·수익률·유리한 진로는 예측하지 않습니다.');
+    return '<details class="life-outlook" style="margin:14px 0;padding:10px;border:1px solid #b8c8b6;border-radius:8px"><summary style="cursor:pointer">선택 전, 장기 흐름과 생활경제 빈칸 비교</summary><p class="note">현재 구현한 규칙만 설명합니다. 열기·닫기에는 게임 월·현금·기록 변화가 없고 아래 진로 버튼을 눌러야 선택됩니다.</p>' + body + '</details>';
   }
 
   function settlementNote(turn) {

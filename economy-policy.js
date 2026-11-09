@@ -19,6 +19,10 @@
         if(!obj(r)||Object.keys(r).sort().join(',')!=='income,living,month,paid,status,tuition'||!month(r.month)||idx(r.month)!==start+i+1||seen.has(r.month)||![0,300000].includes(r.income)||r.living!==100000||![0,800000].includes(r.tuition)||!['due','paid','deferred'].includes(r.status)||!Number.isFinite(r.paid)||r.paid<0||r.paid>r.living+r.tuition||r.paid!==(r.status==='paid'?r.living+r.tuition:0)) return {ok:false,reason:'invalid-cash-row'};
         seen.add(r.month);
       }
+      if(Object.prototype.hasOwnProperty.call(state,'cashAutomation')) {
+        const a=state.cashAutomation;
+        if(!obj(a)||Object.keys(a).sort().join(',')!=='enabled,enabledAfterMonth,paidMonths,version'||a.version!==1||typeof a.enabled!=='boolean'||!month(a.enabledAfterMonth)||a.enabledAfterMonth<startMonth||a.enabledAfterMonth>state.month||!Array.isArray(a.paidMonths)||a.paidMonths.length>c.rows.length||new Set(a.paidMonths).size!==a.paidMonths.length||a.paidMonths.some((m,i)=>!month(m)||(i>0&&m<=a.paidMonths[i-1])||!c.rows.some(r=>r.month===m&&r.tuition===0&&r.status==='paid'&&r.paid===r.living)))return {ok:false,reason:'invalid-cash-automation'};
+      }
       if(c.rows.filter(r=>r.status==='due').length>1 || c.rows.some((r,i)=>r.status==='due'&&i!==c.rows.length-1) || c.rows.filter(r=>r.tuition>0).length>1 || c.tuitionIssued!==c.rows.some(r=>r.tuition>0)) return {ok:false,reason:'invalid-cash-sequence'};
     }
     return {ok:true,legacy:false,id:expected};

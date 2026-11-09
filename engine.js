@@ -1589,9 +1589,13 @@
     const exact=relevant.filter(h=>typeof h.decisionMonth==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(h.decisionMonth));
     return {version:1,source:'recorded-user-actions-v1',missingDateCount:relevant.length-exact.length,entries:exact.map(h=>({month:h.decisionMonth,choice:h.choice}))};
   }
+  function validDecisionReview(r) {
+    const mon=x=>typeof x==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(x);
+    return !!r&&r.version===1&&r.source==='recorded-user-actions-v1'&&Number.isInteger(r.missingDateCount)&&r.missingDateCount>=0&&Array.isArray(r.entries)&&r.entries.length<=2000&&r.entries.every(e=>e&&mon(e.month)&&decisionInfo(e.choice));
+  }
   function decisionReviewHtml(record) {
-    const r=record.decisionReview, mon=x=>typeof x==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(x);
-    if(!r||r.version!==1||r.source!=='recorded-user-actions-v1'||!Number.isInteger(r.missingDateCount)||r.missingDateCount<0||!Array.isArray(r.entries)||r.entries.length>2000||r.entries.some(e=>!e||!mon(e.month)||!decisionInfo(e.choice)))return '<p class="note decision-review-missing">주요선택 연표 근거 미기록·미확인 - 과거 선택월이나 자동이력을 추정하지 않습니다.</p>';
+    const r=record.decisionReview;
+    if(!validDecisionReview(r))return '<p class="note decision-review-missing">주요선택 연표 근거 미기록·미확인 - 과거 선택월이나 자동이력을 추정하지 않습니다.</p>';
     const groups=['진로·복무·매매 흐름','가상청구 선택'];
     let html='<details class="decision-review"><summary>주요선택 연표 · 날짜기록 '+r.entries.length+'건</summary><p class="note">실제 버튼을 확정하기 전 게임 월입니다. 과거 history의 진행 후 월을 선택월로 바꾸지 않았습니다. 소급 가정한 재학·복무·자동졸업은 사용자가 고른 선택으로 채우지 않습니다. 매매 신청은 체결과 다르며, 납부는 임의 시험청구입니다. 아래 번호는 이 연표 안의 저장 순서입니다.</p>';
     if(r.missingDateCount)html+='<p class="note decision-review-partial">선택월 근거가 없는 이전 주요행동 '+r.missingDateCount+'건은 연표에서 제외했습니다. 기존 월을 거꾸로 추정하지 않았습니다.</p>';
@@ -1600,8 +1604,24 @@
     return html+'</details>';
   }
 
+  function activeDecisionComparisonHtml(lives, index) {
+    const current=buildDecisionReview();
+    let html='<section class="active-decision-review" aria-label="이번 회귀와 지난 회귀 선택 복기"><h3>이번 회귀와 지난 회귀 선택 복기</h3><p class="note">현재 게임 월 '+esc(state.month)+'까지 날짜 근거가 있는 선택을 같은 달끼리 나란히 봅니다. 같은 달이어도 생년·진로·진행 조건은 다를 수 있고, 과거 기록의 생년 근거는 저장하지 않았습니다. 선택이 없는 칸은 행동이 없었다는 증거가 아닙니다. 수익 효과·추천·현실 진로우열을 계산하지 않습니다. 자동일정 확인은 사용자 선택과 따로 표시합니다.</p><div class="current-decision-review"><h4>이번 회귀 · 진행 중</h4>'+decisionReviewHtml({decisionReview:current}).replace('class="decision-review"','class="live-decision-timeline"').replaceAll('class="decision-group"','class="live-decision-group"')+'</div>';
+    if(!lives.length)return html+'<p class="note">비교할 지난 회귀가 아직 없습니다. 이번 기록은 진행 중인 실제 선택만 읽습니다.</p></section>';
+    html+='<label for="decision-life-select">함께 볼 지난 회귀</label> <select id="decision-life-select"><option value="">기록을 고르세요</option>'+lives.map((l,i)=>'<option value="'+i+'" '+(index===i?'selected':'')+'>#'+(i+1)+' · '+esc(l.ended||'종료월 미기록')+'</option>').join('')+'</select>';
+    if(index===null)return html+'</section>';
+    const past=lives[index].decisionReview;
+    if(!validDecisionReview(past))return html+'<p class="note active-decision-missing">고른 지난 회귀의 주요선택 연표 근거가 미기록·미확인입니다. 진행 후 월로 선택월을 채우거나 차이를 계산하지 않습니다.</p></section>';
+    const prior=past.entries.filter(e=>e.month<=state.month),now=current.entries.filter(e=>e.month<=state.month),months=[...new Set([...now,...prior].map(e=>e.month))].sort();
+    html+='<p class="note">#'+(index+1)+' 기록과 비교 · 이번 '+now.length+'건 / 지난 '+prior.length+'건. 지난 회귀의 현재월 뒤 '+(past.entries.length-prior.length)+'건은 이 나란히 보기에서 제외합니다. 선택월 근거 누락: 이번 '+current.missingDateCount+'건 / 지난 '+past.missingDateCount+'건. 구기록을 보완하거나 저장을 고쳐 쓰지 않습니다.</p>';
+    if(!months.length)html+='<p class="note">현재월까지 나란히 볼 날짜기록이 없습니다.</p>';
+    const list=entries=>entries.length?'<ol>'+entries.map(e=>{const info=decisionInfo(e.choice);return '<li>['+esc(info.group)+'] '+esc(info.label)+'</li>'}).join('')+'</ol>':'<p class="note">이 달의 주요선택 날짜기록 없음</p>';
+    html+='<details class="decision-month-comparison"><summary>같은 달 선택 펼치기 · '+months.length+'개월</summary>'+months.map(month=>'<section class="decision-month"><h4>'+esc(month)+'</h4><div class="decision-current"><strong>이번 회귀</strong>'+list(now.filter(e=>e.month===month))+'</div><div class="decision-prior"><strong>지난 회귀 #'+(index+1)+'</strong>'+list(prior.filter(e=>e.month===month))+'</div></section>').join('')+'</details></section>';
+    return html;
+  }
+
   // 회귀 기록 대시보드 (1차 기획 확정 10: 단회성 인생 + 영구 기록)
-  function renderDashboard(selected = []) {
+  function renderDashboard(selected = [], decisionIndex = null) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
     if (storageReadBlocked) return showStorageReadUnavailable();
     const card = document.getElementById('turn-card');
@@ -1614,7 +1634,8 @@
     const pathLabel = { 'study': '진학 준비(학생)', 'parttime': '알바로 종잣돈 마련 중',
       'study-job': '진학 후 취업', 'study-fulltime': '진학 후 전업투자', 'parttime-fulltime': '알바 후 전업투자' };
     selected=selected.filter((i,n,arr)=>Number.isInteger(i)&&i>=0&&i<lives.length&&arr.indexOf(i)===n).slice(0,2);
-    let html = '<div class="date">회귀 기록</div><h2>지난 인생 대시보드</h2>';
+    decisionIndex=Number.isInteger(decisionIndex)&&decisionIndex>=0&&decisionIndex<lives.length?decisionIndex:null;
+    let html = '<div class="date">회귀 기록</div><h2>지난 인생 대시보드</h2>'+activeDecisionComparisonHtml(lives,decisionIndex);
     if(lives.length>1 && !CASH_MODE){
       html+='<section class="life-comparison" aria-label="선택한 두 기록 비교"><h3>내가 고른 두 기록</h3><p>아래에서 두 기록을 골라 시작자금·시험 순저축·잔차를 함께 보세요. 선택은 이 화면에서만 유지되며 원본 기록을 바꾸지 않아요.</p>';
       html+='<p id="life-selection-status">'+selected.map(i=>'#'+(i+1)).join(' / ')+' · '+selected.length+'/2개 선택</p>';
@@ -1640,8 +1661,10 @@
       html += CASH_MODE ? '<p class="note">별도 현금사건 시험 회귀기록입니다. 총자산은 미납 차감 전입니다. 각 기록의 수입·납부·미납·시연순자산을 함께 읽고 실제 진로우열·투자실력·수익률 순위로 해석하지 마세요. 원래 시험순저축 모형의 기록과 합치지 않습니다. 이 기기에만 저장됩니다.</p>' : '<p class="note">최고 기록은 시연 총자산 기준이며 투자 실력·수익률 순위가 아니에요. 진행 개월과 진로의 시험 순저축이 다르면 단순 비교할 수 없어요. 실제 학비·생활비·세금은 미연결이에요.</p><p class="note">고정 목표 자산은 없습니다. 최고 기록 갱신이 이 게임의 장기 목표예요. 기록은 이 기기에만 저장됩니다.</p>';
     }
     card.innerHTML = html;
-    card.querySelectorAll('.life-select').forEach(button=>{button.onclick=()=>{const i=Number(button.dataset.lifeIndex);renderDashboard(selected.includes(i)?selected.filter(x=>x!==i):[...selected,i]);document.querySelector('.life-select[data-life-index="'+i+'"]')?.focus()}});
-    const clear=card.querySelector('#life-selection-clear');if(clear)clear.onclick=()=>{renderDashboard([]);document.querySelector('.life-select')?.focus()};
+    card.querySelectorAll('.life-select').forEach(button=>{button.onclick=()=>{const i=Number(button.dataset.lifeIndex);renderDashboard(selected.includes(i)?selected.filter(x=>x!==i):[...selected,i],decisionIndex);document.querySelector('.life-select[data-life-index="'+i+'"]')?.focus()}});
+    const clear=card.querySelector('#life-selection-clear');if(clear)clear.onclick=()=>{renderDashboard([],decisionIndex);document.querySelector('.life-select')?.focus()};
+    const decisionSelect=card.querySelector('#decision-life-select');
+    if(decisionSelect)decisionSelect.onchange=()=>{const value=decisionSelect.value;renderDashboard(selected,value===''?null:Number(value));document.getElementById('decision-life-select')?.focus()};
     const back = document.createElement('button');
     back.textContent = '돌아가기';
     back.onclick = () => render();

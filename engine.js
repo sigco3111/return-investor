@@ -275,8 +275,12 @@
     return false;
   }
 
+  function productAvailable(u) {
+    const cutoff = effDate && effDate.slice(0, 7) === state.month ? effDate : state.month + '-01';
+    return !!u && (!u.available_from || u.available_from <= cutoff);
+  }
   function unlockedProducts() {
-    return DATA.unlocks.filter(u => !u.available_from || u.available_from <= state.month + '-31');
+    return DATA.unlocks.filter(productAvailable);
   }
 
   const DEMO_END = '2003-12'; // 시제품 데이터 구간 끝 (전체 게임 종료 2026-10과 별개)
@@ -669,7 +673,7 @@
         settlementNote(turn) + sourceDetails(ev) + lifeOutlookHtml(turn) + (!CASH_MODE && turn.kind === 'life' && ['life-scenario','life-hs1','life-grad'].includes(ev.id) ? '<p class="note">생활 흐름 [미완성]: 현재는 시험용 순저축만 더하며 생활비·학비·세금·임금의 별도 흐름은 계산하지 않아요. 전업의 생활비 차감도 아직 없어요. 전업 자산 하한 1,200만 원은 월 100만 원×12개월이라는 시험값이지 실제 생활 가능성 판정이 아닙니다.</p>' : '');
       if (ev.unlock && !state.unlocksSeen.includes(ev.unlock)) {
         const prod = DATA.unlocks.find(u => u.product === ev.unlock);
-        if (prod) {
+        if (productAvailable(prod)) {
           unlockArea.innerHTML += '<div class="unlock-banner">새 접근 경로: ' + esc(prod.name) + ' — 시장 개장과 실제 개인 상품 접근은 별개로 검증해요</div>';
           state.unlocksSeen.push(ev.unlock);
         }
@@ -874,6 +878,7 @@
           b.disabled = true; // 지수·환율 지점 모두 현재 확보돼야 주문 가능(현재 기준 판정)
         }
         b.onclick = () => {
+          if (!productAvailable(u)) return;
           const pt = holdingPricePoint(u.product, state.month);
           pending.product = u.product;
           pending.price = pt ? pt.value : null;
@@ -975,6 +980,7 @@
       go.onclick = () => {
         if (go.disabled || Math.round(base * Number(slider.value) / 100) <= 0) return;
         const p = pending;
+        if (!productAvailable(productRule(p.product))) { pending = null; render(); return; }
         pending = null;
         if (p.direction === 'sell') {
           const h = state.holdings[p.product];
@@ -1268,6 +1274,7 @@
     for (const o of state.pendingOrders) {
       if (!o.obsCutoff || typeof o.obsPostClose !== 'boolean') continue; // 주문 접수 관측시각이 없는 구 형식은 추측 체결하지 않음
       const u = productRule(o.product);
+      if (!productAvailable(u)) continue;
       const pt = priceAt(u.series || o.product, state.month);
       if (!pt || wasObservableAt(pt, o.obsCutoff, o.obsPostClose)) continue; // 접수 후 새로 관측 가능해진 적격 지점만
       let unitPrice = pt.value;

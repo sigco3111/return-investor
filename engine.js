@@ -4,10 +4,11 @@
    - 매 턴 능동 선택 1개 이상: 유지/건너뛰기도 선택. 새 매매 강제 없음. */
 (function () {
   const CASH_MODE = new URLSearchParams(location.search).get('economy') === 'cash-events-trial';
-  const SCHOOL_MODE = !CASH_MODE && new URLSearchParams(location.search).get('start') === 'school-calendar-trial';
-  const MODEL_ID = CASH_MODE ? 'trial-cash-events-v1' : 'trial-net-savings-v1';
-  const SAVE_KEY = SCHOOL_MODE ? 'regression-invest-school-calendar-save-v1' : CASH_MODE ? 'regression-invest-cash-events-save-v1' : 'regression-invest-save-v2';
-  const LIVES_KEY = SCHOOL_MODE ? 'regression-invest-school-calendar-lives-v1' : CASH_MODE ? 'regression-invest-cash-events-lives-v1' : 'regression-invest-lives';
+  const SCHOOL_MODE = new URLSearchParams(location.search).get('start') === 'school-calendar-trial';
+  const SCHOOL_CASH_MODE = SCHOOL_MODE && CASH_MODE;
+  const MODEL_ID = SCHOOL_CASH_MODE ? 'trial-school-cash-events-v1' : CASH_MODE ? 'trial-cash-events-v1' : 'trial-net-savings-v1';
+  const SAVE_KEY = SCHOOL_CASH_MODE ? 'regression-invest-school-cash-save-v1' : SCHOOL_MODE ? 'regression-invest-school-calendar-save-v1' : CASH_MODE ? 'regression-invest-cash-events-save-v1' : 'regression-invest-save-v2';
+  const LIVES_KEY = SCHOOL_CASH_MODE ? 'regression-invest-school-cash-lives-v1' : SCHOOL_MODE ? 'regression-invest-school-calendar-lives-v1' : CASH_MODE ? 'regression-invest-cash-events-lives-v1' : 'regression-invest-lives';
 
   // A denied storage read is not an absent save. Do not show a new-game form
   // or claim preservation when even the original bytes cannot be retrieved.
@@ -54,7 +55,7 @@
   }
 
   async function boot() {
-    if(SCHOOL_MODE)document.querySelector('header p').textContent='고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성';
+    if(SCHOOL_MODE)document.querySelector('header p').textContent=(SCHOOL_CASH_MODE?'고1 달력 + 현금사건 연결 시험 · 새 저장키 · 모든 금액 임의값':'고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성');
     if (!initialStorage.ok) return showStorageReadUnavailable();
     const [baseEvents, prices, turns, unlocks, rates, schoolEvents] = await Promise.all([
       fetch('data/events.json').then(r => r.json()),
@@ -96,10 +97,10 @@
     const c=state.schoolStart,b=state.flags.birth,p=b&&ReturnSchoolCalendar.startPlan(b.year,b.month);
     return !!c&&Object.keys(c).sort().join(',')==='startMonth,version'&&c.version===1&&p?.ok&&b.hsYear===p.calendar.highYear&&c.startMonth===p.startMonth&&state.month>=c.startMonth&&state.month<='2026-11'&&state.assetReviewBaseline?.month===c.startMonth;
   }
-  function schoolTrialNote(short=false){if(short)return '<p class="note school-trial-note">고1 달력 시작 시험 · 별도 저장 · 금액/진학/복무는 임의 시험가정.1996-03 전 매매 차단, 이후도 기존 희소자료 시연입니다. 실제 역사·생활경제 완성본이 아닙니다.</p>';return '<p class="note school-trial-note">별도 고1 달력 시작 시험 - 통상진급의 학년을 계산했으며 개인 학적·실제 개학일은 아닙니다.1996-03 전은 일부 선택 뉴스만 연결했고 상품접근·가격 근거가 부족해 매매를 막았습니다. 새 뉴스는 기존 진행을 되감아 재생하지 않아요. 1996-03 이후도 기존 희소·일부 미검증자료 시연입니다. 시작100만원과 순저축·진학/복무 일정은 임의 시험가정이며1990년대 생활경제 고증이 아닙니다. 자산분해는 이 시작월을 아직 지원하지 않아 계산하지 않습니다. <a href="?">기존1996시작 회귀로 돌아가기</a></p>';}
+  function schoolTrialNote(short=false){if(short)return '<p class="note school-trial-note">고1 달력 시작 시험 · 별도 저장 · 금액/진학/복무는 임의 시험가정.1996-03 전 매매 차단, 이후도 기존 희소자료 시연입니다. 실제 역사·생활경제 완성본이 아닙니다.</p>';return '<p class="note school-trial-note">별도 고1 달력 시작 시험 - 통상진급의 학년을 계산했으며 개인 학적·실제 개학일은 아닙니다.1996-03 전은 일부 선택 뉴스만 연결했고 상품접근·가격 근거가 부족해 매매를 막았습니다. 새 뉴스는 기존 진행을 되감아 재생하지 않아요. 1996-03 이후도 기존 희소·일부 미검증자료 시연입니다. 시작100만원과 경제·진학/복무 일정은 임의 시험가정이며1990년대 생활경제 고증이 아닙니다. 자산분해는 이 시작월을 아직 지원하지 않아 계산하지 않습니다. <a href="?">기존1996시작 회귀로 돌아가기</a></p>';}
   function renderBirthSelect() {
     vnScene('life');
-    if(SCHOOL_MODE){document.querySelector('header p').textContent='고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성';}
+    if(SCHOOL_MODE){document.querySelector('header p').textContent=(SCHOOL_CASH_MODE?'고1 달력 + 현금사건 연결 시험 · 새 저장키 · 모든 금액 임의값':'고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성');}
     const card = document.getElementById('turn-card');
     const box = document.getElementById('choices');
     box.innerHTML = '';
@@ -109,8 +110,10 @@
       '<p class="note" id="birth-precision-note">일자는 받지 않는 월 단위 시연이에요. 정확한 생일에 따른 법정 나이·근로 자격을 판정하지 않아요.</p>' +
       '<p class="note" id="hs-preview"></p>' +
       (CASH_MODE ? '<div class="cash-model-intro"><h3>별도 현금사건 시험 회귀 [모든 금액 임의값]</h3><p>기존 저장·회귀기록과 다른 키에 새로 시작합니다. 기존 월 순저축은 적용하지 않아요. 시작100만원, 매월 생활 가상청구10만원(복무 중도 동일), 시험수입은 고교 알바·졸업취업 월30만원/그 외0원입니다. 최초 대학 재학월 진행에 학비 가상청구80만원을 한 번 냅니다. 실제 학교·급여·공제·학적규정이 아니에요.</p><p>수입은 월 진행 때 한 번 입금하고 청구를 선택 전에 보여줘요. 전액 납부 또는 명시 보류를 고릅니다. 부족하면 납부는 막고 미납을 남겨요. 보류는 학적연기나 채무면제를 뜻하지 않으며 이 시험에서는 재학 일정은 바꾸지 않아요. 미납은 총자산과 따로 표시하고 뒤에 다시 낼 수 있어요. 자동대출·매도·가족송금은 없어요. 전체 생계·장학·환급 모형이 아닌 최소연결 시험입니다.</p><label><input id="cash-consent" type="checkbox"> 이 임의 시험가정과 별도 저장으로 새 회귀 시작에 동의</label><p><a href="?">기존 시험순저축 회귀로 돌아가기</a></p></div>' : '<p><a id="cash-mode-entry" href="?economy=cash-events-trial">기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기</a></p>');
+    if(SCHOOL_CASH_MODE)card.innerHTML+='<div class="school-cash-intro"><h3>고1 달력과 현금사건 연결 [모든 금액 임의값]</h3><p>기존 기본·현금·고1 모형의 여섯 저장키를 읽어 옮기거나 변환하지 않고 두 새 키에 시작합니다. 고1 선택월에는 청구가 없고 다음 달부터 수입·생활 가상청구를 한 번씩 만듭니다. 실제 역사 급여·학비·미성년 가입조건이나 복무규칙이 아닙니다.1996-03 전 매매차단은 그대로이며 현금이 있어도 해제되지 않습니다. 입대 선택월은 이미 생성한 현금사건을 다시 계산하지 않고 다음 월부터 복무 중 수입0원을 적용합니다. 아래 두 동의 모두 필요합니다.</p></div>';
     if(SCHOOL_MODE)card.innerHTML+=schoolTrialNote()+'<label><input id="school-consent" type="checkbox"> 이 자료공백·임의값·별도 저장으로 고1 달력 시험 시작에 동의</label>';
     else if(!CASH_MODE)card.innerHTML+='<p><a id="school-mode-entry" href="?start=school-calendar-trial">기존 저장을 그대로 두고 생년월별 고1 달력 시작 시험 보기</a></p>';
+    if(!SCHOOL_CASH_MODE)card.innerHTML+='<p><a id="school-cash-mode-entry" href="?start=school-calendar-trial&amp;economy=cash-events-trial">기존 여섯 저장키를 그대로 두고 고1 달력+현금사건 연결 시험 보기</a></p>';
     const by = document.getElementById('by'), bm = document.getElementById('bm');
     for (let y = 1975; y <= (SCHOOL_MODE?2010:1985); y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; if (y === 1980) o.selected = true; by.appendChild(o); }
     for (let m = 1; m <= 12; m++) { const o = document.createElement('option'); o.value = m; o.textContent = m; if (m === 3) o.selected = true; bm.appendChild(o); }
@@ -125,9 +128,9 @@
     }
     by.onchange = upd; bm.onchange = upd; upd();
     const go = document.createElement('button');
-    go.textContent = SCHOOL_MODE?'이 생년월 고1부터 달력 시험':'이 생년월로 회귀';
-    if(SCHOOL_MODE){go.disabled=true;document.getElementById('school-consent').onchange=e=>{go.disabled=!e.target.checked};}
-    if(CASH_MODE){go.disabled=true;document.getElementById('cash-consent').onchange=e=>{go.disabled=!e.target.checked};}
+    go.textContent = SCHOOL_CASH_MODE?'고1 달력+현금사건 새 회귀 시작':SCHOOL_MODE?'이 생년월 고1부터 달력 시험':'이 생년월로 회귀';
+    const consentReady=()=> (!SCHOOL_MODE||document.getElementById('school-consent').checked)&&(!CASH_MODE||document.getElementById('cash-consent').checked);
+    if(SCHOOL_MODE||CASH_MODE){go.disabled=true;for(const id of ['school-consent','cash-consent']){const el=document.getElementById(id);if(el)el.onchange=()=>{go.disabled=!consentReady()}}}
     go.onclick = () => {
       if (!readLives()) return;
       if(CASH_MODE&&!document.getElementById('cash-consent').checked)return;
@@ -276,6 +279,7 @@
   }
 
   function productAvailable(u) {
+    // 월말을 앞당겨 쓰지 않는다. 현재 판단일 이전의 접근 경로만 신규 접수/체결에 쓴다.
     const cutoff = effDate && effDate.slice(0, 7) === state.month ? effDate : state.month + '-01';
     return !!u && (!u.available_from || u.available_from <= cutoff);
   }
@@ -523,6 +527,7 @@
   }
   function renderCashDue() {
     const row=state.cashEvents.rows.find(r=>r.status==='due');if(!row)return render();
+    effDate=state.month+'-01';effPostClose=false; // 월초 청구 판단. 전월 관측일 표시를 이어 쓰지 않는다.
     const cost=row.living+row.tuition, short=Math.max(0,cost-state.cash);
     vnScene('life');document.getElementById('unlock-area').innerHTML='';
     document.getElementById('turn-card').innerHTML='<div class="date">'+esc(row.month)+' · 별도 현금사건 시험</div><h2>가상청구를 어떻게 처리할까</h2><p>이번 달 시험수입 +'+row.income.toLocaleString()+'원은 한 번 입금했습니다. 생활가상청구 '+row.living.toLocaleString()+'원'+(row.tuition?' + 최초재학 학비가상청구 '+row.tuition.toLocaleString()+'원':'')+'입니다. 전부 임의 시험값입니다.</p><p>납부액 '+cost.toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원 / 부족 '+short.toLocaleString()+'원.</p><p class="note">납부 전에 확인합니다. 예약현금·미체결매도는 사용할 수 없고 자동매도·대출·가족송금은 없습니다. 아래 자산표에서 대기주문을 명시 취소할 수 있어요. 보류하면 미납을 남기고 같은 달의 본게임을 계속하며, 이후 다시 낼 수 있습니다. 보류해도 이 최소시험의 재학 일정은 바꾸지 않습니다.</p>';
@@ -1274,7 +1279,7 @@
     for (const o of state.pendingOrders) {
       if (!o.obsCutoff || typeof o.obsPostClose !== 'boolean') continue; // 주문 접수 관측시각이 없는 구 형식은 추측 체결하지 않음
       const u = productRule(o.product);
-      if (!productAvailable(u)) continue;
+      if (!productAvailable(u)) continue; // 이전 버전의 이른 주문은 예약을 보존하고 접근일 전 체결하지 않음
       const pt = priceAt(u.series || o.product, state.month);
       if (!pt || wasObservableAt(pt, o.obsCutoff, o.obsPostClose)) continue; // 접수 후 새로 관측 가능해진 적격 지점만
       let unitPrice = pt.value;
@@ -1485,7 +1490,7 @@
 
   function assetReviewHtml(r = ReturnAssetReview.review(state, totalAssets()), recorded = false) {
     if (!r.available && recorded) return '<details class="asset-review recorded-asset-review"><summary>선택 결과 복기 · 이 기록의 분해 근거 없음</summary><p class="note">당시 시작자금·월 순저축 분해값을 함께 남기지 않았거나 지원하는 형식이 아니에요. 최종자산에서 과거 저축이나 수익을 추측 복원하지 않아요. 기존 기록을 덮어쓰지 않았어요.</p></details>';
-    if(!r.available&&SCHOOL_MODE)return '<details class="asset-review"><summary>선택 결과 복기 · 고1별도시작 분해 미지원</summary><p class="note">이 시험의 생월별 시작월은 기존1996-03 자산분해 형식과 다릅니다. 불완전한 형식을 추정 변환하지 않고 자산분해를 계산하지 않습니다. 실제 기록된 월 순저축은 별도 장부로 확인합니다.</p></details>';
+    if(!r.available&&SCHOOL_MODE)return '<details class="asset-review"><summary>선택 결과 복기 · 고1별도시작 분해 미지원</summary><p class="note">이 시험의 생월별 시작월은 기존1996-03 자산분해 형식과 다릅니다. 불완전한 형식을 추정 변환하지 않고 자산분해를 계산하지 않습니다. 실제 기록된 월 현금흐름은 현재 모형의 별도 장부로 확인합니다.</p></details>';
     if (!r.available) return '<details class="asset-review"><summary>선택 결과 복기 · 전체 변화 분리 불가</summary><p class="note">시작자금 근거 또는 월 순저축 기록이 온전하지 않아 총자산을 투자 성과로 나누지 않았어요. 이전 저장의 과거 금액을 추측하지 않아요. 기록된 순저축·이자는 아래 장부에서 확인할 수 있어요.</p></details>';
     const money = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) + '원';
     const signed = n => (n > 0 ? '+' : '') + money(n);
@@ -1578,6 +1583,7 @@
     }
     if(SCHOOL_MODE)rows+=schoolTrialNote();
     else rows+='<p><a href="'+(CASH_MODE?'?':'?economy=cash-events-trial')+'">'+(CASH_MODE?'기존 시험순저축 회귀로 돌아가기':'기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기')+'</a></p>';
+    if(!SCHOOL_CASH_MODE)rows+='<p><a id="school-cash-mode-entry" href="?start=school-calendar-trial&amp;economy=cash-events-trial">기존 여섯 저장키를 그대로 두고 고1 달력+현금사건 연결 시험 보기</a></p>';
     if(!SCHOOL_MODE&&!CASH_MODE)rows+='<p><a id="school-mode-entry" href="?start=school-calendar-trial">기존 저장을 그대로 두고 생년월별 고1 달력 시작 시험 보기</a></p>';
     el.innerHTML = rows;
     if(CASH_MODE){const b=document.getElementById('cash-retry');if(b)b.onclick=()=>renderCashRepay();}
@@ -1666,7 +1672,7 @@
     const lives = readLives();
     if (!lives) return;
     const causeLabel = { chaos: '역사 변경(카오스 한계)', 'demo-end': '시제품 구간 종료', 'natural-end': '인생 결산(전체 구간 종료)' };
-    const cashRecordHtml=l=>{const c=l.cashFlowSummary;if(!CASH_MODE)return '';if(!c||!['income','paid','unpaid'].every(k=>Number.isFinite(c[k])&&c[k]>=0)||!Number.isInteger(c.months)||c.months<0||c.months>367||!Number.isFinite(l.totalAssets))return '<p class="note">현금사건 요약 근거 미확인 - 과거 금액을 추정하지 않아요.</p>';return '<p class="cash-record-summary note">별도 현금사건 시험 '+c.months+'개월 / 수입 +'+c.income.toLocaleString()+'원 / 납부 -'+c.paid.toLocaleString()+'원 / 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(l.totalAssets-c.unpaid).toLocaleString()+'원. 총자산 비교는 미납 차감 전이며 현실 진로우열이 아니에요.</p>'};
+    const cashRecordHtml=l=>{const c=l.cashFlowSummary;if(!CASH_MODE)return '';if(!c||!['income','paid','unpaid'].every(k=>Number.isFinite(c[k])&&c[k]>=0)||!Number.isInteger(c.months)||c.months<0||c.months>(SCHOOL_CASH_MODE&&l.schoolStart?((2026-Number(l.schoolStart.startMonth.slice(0,4)))*12+10-Number(l.schoolStart.startMonth.slice(5))):367)||!Number.isFinite(l.totalAssets))return '<p class="note">현금사건 요약 근거 미확인 - 과거 금액을 추정하지 않아요.</p>';return '<p class="cash-record-summary note">별도 현금사건 시험 '+c.months+'개월 / 수입 +'+c.income.toLocaleString()+'원 / 납부 -'+c.paid.toLocaleString()+'원 / 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(l.totalAssets-c.unpaid).toLocaleString()+'원. 총자산 비교는 미납 차감 전이며 현실 진로우열이 아니에요.</p>'};
     const pathLabel = { 'study': '진학 준비(학생)', 'parttime': '알바로 종잣돈 마련 중',
       'study-job': '진학 후 취업', 'study-fulltime': '진학 후 전업투자', 'parttime-fulltime': '알바 후 전업투자' };
     selected=selected.filter((i,n,arr)=>Number.isInteger(i)&&i>=0&&i<lives.length&&arr.indexOf(i)===n).slice(0,2);

@@ -4,9 +4,10 @@
    - 매 턴 능동 선택 1개 이상: 유지/건너뛰기도 선택. 새 매매 강제 없음. */
 (function () {
   const CASH_MODE = new URLSearchParams(location.search).get('economy') === 'cash-events-trial';
+  const SCHOOL_MODE = !CASH_MODE && new URLSearchParams(location.search).get('start') === 'school-calendar-trial';
   const MODEL_ID = CASH_MODE ? 'trial-cash-events-v1' : 'trial-net-savings-v1';
-  const SAVE_KEY = CASH_MODE ? 'regression-invest-cash-events-save-v1' : 'regression-invest-save-v2';
-  const LIVES_KEY = CASH_MODE ? 'regression-invest-cash-events-lives-v1' : 'regression-invest-lives';
+  const SAVE_KEY = SCHOOL_MODE ? 'regression-invest-school-calendar-save-v1' : CASH_MODE ? 'regression-invest-cash-events-save-v1' : 'regression-invest-save-v2';
+  const LIVES_KEY = SCHOOL_MODE ? 'regression-invest-school-calendar-lives-v1' : CASH_MODE ? 'regression-invest-cash-events-lives-v1' : 'regression-invest-lives';
 
   // A denied storage read is not an absent save. Do not show a new-game form
   // or claim preservation when even the original bytes cannot be retrieved.
@@ -53,6 +54,7 @@
   }
 
   async function boot() {
+    if(SCHOOL_MODE)document.querySelector('header p').textContent='고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성';
     if (!initialStorage.ok) return showStorageReadUnavailable();
     const [events, prices, turns, unlocks, rates] = await Promise.all([
       fetch('data/events.json').then(r => r.json()),
@@ -67,6 +69,7 @@
     if (!loadedSnapshot.ok) return showSaveConflict('저장 JSON 또는 기본 구조를 읽을 수 없어 진행하지 않았습니다. 새 게임으로 자동 대체하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     if (!ReturnEconomyPolicy.inspect(state, MODEL_ID).ok) return showEconomyConflict();
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
+    if (loadedSnapshot.exists && SCHOOL_MODE && !validSchoolStart()) return showSaveConflict('고1 달력 시작 시험의 시작월·생월 근거를 확인할 수 없어 멈췄습니다. 기존 모형으로 추정 변환하거나 덮어쓰지 않았어요.', 'school-start');
     if (!loadedSnapshot.exists) {
       renderBirthSelect();
       if (legacySave) {
@@ -82,38 +85,53 @@
   // 생년/학제 연동: 2008학년도까지 취학 기준일 3월 1일 → 1·2월생은 전 해 출생아와 입학(빠른년생)
   // 근거: 정책브리핑·연합뉴스 (1차 기획 확인분). 3~12월생 고1 = 생년+16, 1·2월생 = 생년+15.
   function hsYear(birthYear, birthMonth) {
+    if(SCHOOL_MODE){const c=ReturnSchoolCalendar.nominal(birthYear,birthMonth);if(!c.ok)throw Error('Unsupported school cohort');return c.highYear;}
     return birthMonth <= 2 ? birthYear + 15 : birthYear + 16;
   }
+  function schoolStartMonth(){return SCHOOL_MODE&&state.schoolStart?state.schoolStart.startMonth:'1996-03';}
+  function schoolDataGap(){return SCHOOL_MODE&&state.month<'1996-03';}
+  function validSchoolStart(){
+    const c=state.schoolStart,b=state.flags.birth,p=b&&ReturnSchoolCalendar.startPlan(b.year,b.month);
+    return !!c&&Object.keys(c).sort().join(',')==='startMonth,version'&&c.version===1&&p?.ok&&b.hsYear===p.calendar.highYear&&c.startMonth===p.startMonth&&state.month>=c.startMonth&&state.month<='2026-11'&&state.assetReviewBaseline?.month===c.startMonth;
+  }
+  function schoolTrialNote(short=false){if(short)return '<p class="note school-trial-note">고1 달력 시작 시험 · 별도 저장 · 금액/진학/복무는 임의 시험가정.1996-03 전 매매 차단, 이후도 기존 희소자료 시연입니다. 실제 역사·생활경제 완성본이 아닙니다.</p>';return '<p class="note school-trial-note">별도 고1 달력 시작 시험 - 통상진급의 학년을 계산했으며 개인 학적·실제 개학일은 아닙니다.1996-03 전은 뉴스·상품접근 근거가 부족한 자료공백 구간으로 매매를 막았습니다. 1996-03 이후도 기존 희소·일부 미검증자료 시연입니다. 시작100만원과 순저축·진학/복무 일정은 임의 시험가정이며1990년대 생활경제 고증이 아닙니다. 자산분해는 이 시작월을 아직 지원하지 않아 계산하지 않습니다. <a href="?">기존1996시작 회귀로 돌아가기</a></p>';}
   function renderBirthSelect() {
     vnScene('life');
+    if(SCHOOL_MODE){document.querySelector('header p').textContent='고1 달력 시작 시험 · 생년월별 별도 저장 · 역사자료/생활경제/상품접근 고증 미완성';}
     const card = document.getElementById('turn-card');
     const box = document.getElementById('choices');
     box.innerHTML = '';
     card.innerHTML = '<div class="date">회귀 시작</div><h2>주인공의 생년월</h2>' +
-      '<p>생년월이 고1 시작 연도를 정합니다. 2008학년도까지 초등 취학 기준일이 3월 1일이라, 1·2월생은 전 해 출생아와 함께 1년 일찍 입학했어요(빠른년생, 2009학년도 폐지).</p>' +
+      (SCHOOL_MODE?'<p>생년월로 통상진급 고1 학년을 계산합니다. 옛 취학기준의1·2월생 동기 구분은2002년생까지 적용합니다.2009학년도부터의 변경은 별도로 계산하며, 개인의 유예·조기입학 이력을 확정하지 않습니다.</p>':'<p>생년월이 고1 시작 연도를 정합니다. 2008학년도까지 초등 취학 기준일이 3월 1일이라, 1·2월생은 전 해 출생아와 함께 1년 일찍 입학했어요(빠른년생, 2009학년도 폐지).</p>') +
       '<p><select id="by"></select> 년생 <select id="bm"></select> 월생</p>' +
       '<p class="note" id="birth-precision-note">일자는 받지 않는 월 단위 시연이에요. 정확한 생일에 따른 법정 나이·근로 자격을 판정하지 않아요.</p>' +
       '<p class="note" id="hs-preview"></p>' +
       (CASH_MODE ? '<div class="cash-model-intro"><h3>별도 현금사건 시험 회귀 [모든 금액 임의값]</h3><p>기존 저장·회귀기록과 다른 키에 새로 시작합니다. 기존 월 순저축은 적용하지 않아요. 시작100만원, 매월 생활 가상청구10만원(복무 중도 동일), 시험수입은 고교 알바·졸업취업 월30만원/그 외0원입니다. 최초 대학 재학월 진행에 학비 가상청구80만원을 한 번 냅니다. 실제 학교·급여·공제·학적규정이 아니에요.</p><p>수입은 월 진행 때 한 번 입금하고 청구를 선택 전에 보여줘요. 전액 납부 또는 명시 보류를 고릅니다. 부족하면 납부는 막고 미납을 남겨요. 보류는 학적연기나 채무면제를 뜻하지 않으며 이 시험에서는 재학 일정은 바꾸지 않아요. 미납은 총자산과 따로 표시하고 뒤에 다시 낼 수 있어요. 자동대출·매도·가족송금은 없어요. 전체 생계·장학·환급 모형이 아닌 최소연결 시험입니다.</p><label><input id="cash-consent" type="checkbox"> 이 임의 시험가정과 별도 저장으로 새 회귀 시작에 동의</label><p><a href="?">기존 시험순저축 회귀로 돌아가기</a></p></div>' : '<p><a id="cash-mode-entry" href="?economy=cash-events-trial">기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기</a></p>');
+    if(SCHOOL_MODE)card.innerHTML+=schoolTrialNote()+'<label><input id="school-consent" type="checkbox"> 이 자료공백·임의값·별도 저장으로 고1 달력 시험 시작에 동의</label>';
+    else if(!CASH_MODE)card.innerHTML+='<p><a id="school-mode-entry" href="?start=school-calendar-trial">기존 저장을 그대로 두고 생년월별 고1 달력 시작 시험 보기</a></p>';
     const by = document.getElementById('by'), bm = document.getElementById('bm');
-    for (let y = 1975; y <= 1985; y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; if (y === 1980) o.selected = true; by.appendChild(o); }
+    for (let y = 1975; y <= (SCHOOL_MODE?2010:1985); y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; if (y === 1980) o.selected = true; by.appendChild(o); }
     for (let m = 1; m <= 12; m++) { const o = document.createElement('option'); o.value = m; o.textContent = m; if (m === 3) o.selected = true; bm.appendChild(o); }
     const prev = document.getElementById('hs-preview');
     function upd() {
       const y = Number(by.value), m = Number(bm.value);
       const hs = hsYear(y, m);
+      if(SCHOOL_MODE){const c=ReturnSchoolCalendar.startPlan(y,m);prev.textContent='통상진급 고1 학년도 시작 '+c.startMonth+' / 고교 마지막 학년 말 '+c.calendar.highEnd+' / 2026-10까지 달력 '+c.calendarMonthsInclusive+'개월 (시작월 뒤 월전이 '+c.monthlyTransitionsThroughEnd+'회). 취학유예·월반·휴학은 이 계산에 포함하지 않습니다.2002년1~2월생까지 예전 취학기준을 적용하며2003년생부터는 적용하지 않아요.';return;}
       prev.textContent = '고1 시작: ' + hs + '년' + (m <= 2 ? ' (빠른년생 적용 — ' + (y - 1) + '년생과 동기)' : '') +
         '. 고1 시작 분기(공부 vs 알바·전업투자), 진학 후 재분기(취업 vs 전업투자), 입대 일정이 이 생년에서 자동 산출돼요' +
         (hs < 1993 || hs > 2000 ? ' (일부 고1 일정이 시작월 1996-03 이전이라 생략되거나 시연용 이력 선택으로 대체돼요 [시연 제약])' : '.');
     }
     by.onchange = upd; bm.onchange = upd; upd();
     const go = document.createElement('button');
-    go.textContent = '이 생년월로 회귀';
+    go.textContent = SCHOOL_MODE?'이 생년월 고1부터 달력 시험':'이 생년월로 회귀';
+    if(SCHOOL_MODE){go.disabled=true;document.getElementById('school-consent').onchange=e=>{go.disabled=!e.target.checked};}
     if(CASH_MODE){go.disabled=true;document.getElementById('cash-consent').onchange=e=>{go.disabled=!e.target.checked};}
     go.onclick = () => {
       if (!readLives()) return;
       if(CASH_MODE&&!document.getElementById('cash-consent').checked)return;
+      if(SCHOOL_MODE&&!document.getElementById('school-consent').checked)return;
       const y = Number(by.value), m = Number(bm.value);
+      if(SCHOOL_MODE){const p=ReturnSchoolCalendar.startPlan(y,m);if(!p.ok)return;state.month=p.startMonth;state.schoolStart={version:1,startMonth:p.startMonth};state.assetReviewBaseline={version:1,source:'new-game',month:p.startMonth,totalAssets:1000000};state.eventIndex=DATA.events.findIndex(e=>e.date.slice(0,7)>=p.startMonth);if(state.eventIndex<0)state.eventIndex=DATA.events.length;}
       state.flags.birth = { year: y, month: m, hsYear: hsYear(y, m) };
       save();
       render();
@@ -140,6 +158,7 @@
     if (DATA && !ReturnEconomyPolicy.inspectNested(state, DATA.unlocks.map(u=>u.product)).ok) return showSaveConflict('보유자산·대기주문·장부의 일부 저장 형식을 확인할 수 없어 멈췄습니다. 금액을 추정하거나 원문을 덮어쓰지 않았어요.', 'save-shape');
     // Identify the existing trial rules only on an actual save; never recalculate old money.
     if (!Object.prototype.hasOwnProperty.call(state, 'economyModel')) state.economyModel = ReturnEconomyPolicy.descriptor(MODEL_ID);
+    if(SCHOOL_MODE&&state.flags.birth&&!validSchoolStart())return showSaveConflict('고1 달력 시작 시험의 시작월·생월 근거를 확인할 수 없어 저장하지 않았습니다.', 'school-start');
     if (DATA) {
       const next = DATA.events[state.eventIndex];
       const prev = DATA.events[state.eventIndex - 1];
@@ -266,7 +285,7 @@
     const finalDeferred = DATA.events[state.eventIndex];
     const pendingFinalConfirmation = finalDeferred && finalDeferred.event_month && finalDeferred.event_month <= GAME_END && finalDeferred.date.slice(0,7) <= state.month;
     if (state.month > GAME_END && !state.flags.gameEndShown && !pendingFinalConfirmation) return { kind: 'natural-end' };
-    if (state.month > DEMO_END && state.month <= GAME_END && !state.flags.demoEndShown) return { kind: 'demo-end' };
+    if (!SCHOOL_MODE && state.month > DEMO_END && state.month <= GAME_END && !state.flags.demoEndShown) return { kind: 'demo-end' };
     if (state.flags.militaryUntil && state.month >= state.flags.militaryUntil && !state.flags.dischargeShown) {
       return { kind: 'discharge' };
     }
@@ -294,7 +313,7 @@
     // 1단 분기(고1): 공부·진학 vs 알바·전업투자
     if (!done.hs1) {
       const d = hs + '-03-02';
-      if (d.slice(0, 7) < '1996-03') {
+      if (d.slice(0, 7) < schoolStartMonth()) {
         // 시제품 시작 전에 고1 분기가 지난 생년. 2단 분기가 구간에 드는 생년(hsYear<=1994)은
         // 시연용 시나리오를 '선택지'로 제공 — 진로 이력을 자동 확정하지 않음 [시연 제약]
         if (hs <= 1994 && !state.flags.studyPath && !done.scenarioOffer) {
@@ -336,7 +355,7 @@
     if (state.flags.studyPath === 'parttime') done.college = true; // 알바 루트는 2단 분기 없이 전업투자로
     if (!done.enlist && state.flags.enlistAt) {
       const d = state.flags.enlistAt + '-01';
-      if (d.slice(0, 7) < '1996-03') done.enlist = true;
+      if (d.slice(0, 7) < schoolStartMonth()) done.enlist = true;
       else return { _dynamic: true, id: 'life-enlist', date: d, kind: 'life',
         card_title: '입영 통지서가 도착했다',
         card_summary: '입대 시점을 정해야 한다. 복무 중에는 시장 대응이 제한되고, 전역하면 그동안의 시장 흐름을 정리해 받는다.',
@@ -431,6 +450,7 @@
   }
   // One permission rule feeds both labels and actual trade-entry handlers.
   function tradeAccess(turn) {
+    if(schoolDataGap())return {allowed:false,label:'자료공백 구간 - 매매 차단 (1996-03 전)'};
     if (!turn || !['news','quiet'].includes(turn.kind)) return {allowed:false, label:'평가만 표시 · 이 화면에서는 주문하지 않음'};
     if (turn.kind === 'news') return state.flags.career === 'job'
       ? {allowed:false, label:'평가만 표시 · 뉴스 대응 주문 불가, 이후 정산 전용 턴에서 주문'}
@@ -654,7 +674,7 @@
       }
       if (turn.kind === 'life' && ev.choices) {
         // 진로·입대는 실제 선택으로만 완료. 일반 hold는 동적 사건을 완료하지 못해 같은 화면에 턴만 쌓이던 오류가 있었다.
-        renderChoices(ev.choices.map(c => ({ id: 'life:' + c.id, label: CASH_MODE&&c.id==='job'?'취업 - 다음 달부터 시험수입30만원':CASH_MODE&&c.id==='study'?'공부 집중 - 시험수입0원/생활가상청구10만원':CASH_MODE&&c.id==='parttime'?'알바 병행 - 고교시험수입30만원/생활가상청구10만원':CASH_MODE&&c.id==='fulltime'?'전업 투자 - 시험수입0원/생활가상청구10만원':c.label })), turn);
+        renderChoices(ev.choices.map(c => ({ id: 'life:' + c.id, label: CASH_MODE&&c.id==='job'?'취업 - 다음 달부터 시험수입30만원':CASH_MODE&&c.id==='study'?'공부 집중 - 시험수입0원/생활가상청구10만원':CASH_MODE&&c.id==='parttime'?'알바 병행 - 고교시험수입30만원/생활가상청구10만원':CASH_MODE&&c.id==='fulltime'?'전업 투자 - 시험수입0원/생활가상청구10만원':SCHOOL_MODE&&c.id==='go-now'?'바로 입대 (26개월 임의 시험 · 해당연도 실제 규정 미연결)':c.label })), turn);
         if (ev.id === 'life-grad') { // 전업 해금 게이트: 자산 하한(생활비 12개월분) 미달이면 전업 선택 불가 [시험용 가정]
           const btn = [...document.getElementById('choices').children].find(x => x.textContent.includes('전업 투자'));
           if (btn && totalAssets() < FULLTIME_GATE) {
@@ -676,7 +696,7 @@
       }
     } else {
       card.innerHTML =
-        '<div class="date">' + state.month + (turn.settlement ? ' · 분기 정산 전용 턴' : ' · 평온') + '</div>' +
+        '<div class="date">' + state.month + (turn.settlement ? ' · 분기 정산 전용 턴' : (schoolDataGap()?' · 자료공백 월':' · 평온')) + '</div>' +
         (turn.settlement ? '<h2>분기 자산을 점검합니다</h2><p>이 달의 뉴스 선택을 마친 뒤 리밸런싱 기회를 한 번 갖습니다. 뉴스 대응 주문과는 별개예요. 이 화면만으로 게임 월이나 이자는 추가되지 않습니다 [시연 설계].</p>' : quietIntro()) +
         quietMarketLine() +
         settlementNote(turn);
@@ -689,14 +709,15 @@
       if (!tradeAccess(turn).allowed) { // no separate month-based exception
         const b0 = document.getElementById('choices').querySelector('button');
         b0.disabled = true;
-        b0.textContent = '리밸런싱 불가 — 직장인은 분기 정산 전용 턴에서만 주문 [설계 제안]';
+        b0.textContent = schoolDataGap()?'자료공백 구간 - 매매 차단 (1996-03 전)':'리밸런싱 불가 — 직장인은 분기 정산 전용 턴에서만 주문 [설계 제안]';
       }
     }
     if(CASH_MODE){const n=document.createElement('p');n.className='note';n.textContent='별도 현금사건 시험 회귀 [임의값] - 원래 순저축은 끄고 수입/가상청구/미납을 자산표에 별도로 표시합니다. 실제급여·학비·생활비 고증은 아니에요.';card.append(n);}
+    if(SCHOOL_MODE)card.innerHTML+=schoolTrialNote(true);
     appendSkipBanner(card);
     renderPortfolio();
     document.getElementById('footnote').textContent =
-      '턴 ' + state.turnCount + ' · 검증된 시세 지점만 표시' +
+      '턴 ' + state.turnCount + (SCHOOL_MODE?' · 고1 달력 시험 · 역사/경제 고증 미완성':' · 검증된 시세 지점만 표시') +
       (state.flags.birth ? ' · ' + state.flags.birth.year + '년 ' + state.flags.birth.month + '월생 · 고1 ' + state.flags.birth.hsYear + '년' : '') +
       (state.flags.demoScenario === 'pre1996-study' ? ' · 시연용 시나리오: 진학 루트 확정·재학 진행 상태로 시작 [시연 제약]' : '');
   }
@@ -1059,9 +1080,10 @@
       if (!save()) return;
       const record = {
         transferId: state.archiveTransferId,
+        ...(SCHOOL_MODE?{schoolStart:{...state.schoolStart},birth:{...state.flags.birth}}:{}),
         decisionReview: buildDecisionReview(),
         ended: id === 'record-and-reset-end' ? GAME_END : state.month, observationMonth: state.month, turnCount: state.turnCount,
-        totalAssets: totalAssets(), assetReview: CASH_MODE?{available:false,reason:'separate-cash-events-model'}:ReturnAssetReview.review(state, totalAssets()), ...(CASH_MODE?{cashFlowSummary:cashSummary()}:{}), cause: causeMap[id],
+        totalAssets: totalAssets(), assetReview: SCHOOL_MODE?{available:false,reason:'separate-school-calendar-model'}:CASH_MODE?{available:false,reason:'separate-cash-events-model'}:ReturnAssetReview.review(state, totalAssets()), ...(CASH_MODE?{cashFlowSummary:cashSummary()}:{}), cause: causeMap[id],
         path: state.flags.studyPath ? (state.flags.studyPath + (state.flags.career ? '-' + state.flags.career : (state.flags.studyPath === 'parttime' ? '-fulltime' : ''))) : null, chaos: state.chaos
       };
       // A failed delete may leave the same completed life in both keys. Reuse
@@ -1406,10 +1428,11 @@
     // 직전 연속 평온 개월 수 (뉴스 없는 달의 연속)
     const newsMonths = new Set(DATA.events.map(e => e.date.slice(0, 7)));
     let n = 0, m = addMonths(state.month, -1);
-    while (!newsMonths.has(m) && m >= '1996-03' && n < 24) { n++; m = addMonths(m, -1); }
+    while (!newsMonths.has(m) && m >= schoolStartMonth() && n < 24) { n++; m = addMonths(m, -1); }
     return n;
   }
   function quietIntro() {
+    if(schoolDataGap())return '<h2>역사자료가 아직 연결되지 않은 달</h2><p>이 달의 뉴스를 확보하지 못했습니다. 실제로 조용했던 달이라는 뜻이 아니에요. 진로·복무와 월진행만 시험하고 매매는 하지 않습니다. 다음 달로 한 달씩 진행할 수 있어요.</p>';
     const streak = quietStreak();
     const mm = state.month.slice(5);
     const seasonal = {
@@ -1431,6 +1454,7 @@
     return '<h2>' + head + '</h2><p>' + body + '</p>';
   }
   function quietMarketLine() {
+    if(schoolDataGap())return '<p class="note">이 달의 상품 접근과 시세 고증 미완료 - 기존 이후 자료를 끌어오거나 보간하지 않습니다.</p>';
     // 평온 턴 카드에 시장 동향 1줄: priceAt 경유라 미래 지점 미노출. 지점이 없으면 공백을 공백으로 표시.
     const [y, m] = state.month.split('-').map(Number);
     const pm = m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
@@ -1452,6 +1476,7 @@
 
   function assetReviewHtml(r = ReturnAssetReview.review(state, totalAssets()), recorded = false) {
     if (!r.available && recorded) return '<details class="asset-review recorded-asset-review"><summary>선택 결과 복기 · 이 기록의 분해 근거 없음</summary><p class="note">당시 시작자금·월 순저축 분해값을 함께 남기지 않았거나 지원하는 형식이 아니에요. 최종자산에서 과거 저축이나 수익을 추측 복원하지 않아요. 기존 기록을 덮어쓰지 않았어요.</p></details>';
+    if(!r.available&&SCHOOL_MODE)return '<details class="asset-review"><summary>선택 결과 복기 · 고1별도시작 분해 미지원</summary><p class="note">이 시험의 생월별 시작월은 기존1996-03 자산분해 형식과 다릅니다. 불완전한 형식을 추정 변환하지 않고 자산분해를 계산하지 않습니다. 실제 기록된 월 순저축은 별도 장부로 확인합니다.</p></details>';
     if (!r.available) return '<details class="asset-review"><summary>선택 결과 복기 · 전체 변화 분리 불가</summary><p class="note">시작자금 근거 또는 월 순저축 기록이 온전하지 않아 총자산을 투자 성과로 나누지 않았어요. 이전 저장의 과거 금액을 추측하지 않아요. 기록된 순저축·이자는 아래 장부에서 확인할 수 있어요.</p></details>';
     const money = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) + '원';
     const signed = n => (n > 0 ? '+' : '') + money(n);
@@ -1492,7 +1517,7 @@
     if (storageWriteBlocked) return showStorageWriteUnavailable();
     if (storageReadBlocked) return showStorageReadUnavailable();
     const el = document.getElementById('portfolio');
-    const kp = priceAt('kospi', state.month);
+    const kp = schoolDataGap()?null:priceAt('kospi', state.month);
     let rows = '<div class="row"><span>현금</span><strong>' + state.cash.toLocaleString() + '원</strong></div>';
     for (const [p, h] of Object.entries(state.holdings)) {
       const u = DATA.unlocks.find(x => x.product === p);
@@ -1504,10 +1529,10 @@
     rows += '<div class="row"><span>코스피 최신 확보 지점</span><strong>' +
       (kp ? kp.value.toLocaleString() + ' (' + fmtPtDate(kp) + ')' : '지점 없음 (공백)') + ' · 관측일 ' + effDate + '</strong></div>';
     if(!CASH_MODE){rows += '<div class="row"><span>월 저축</span><span>' +
-      (militaryActive() ? '복무 중 0원 [시험용 설계값]' : monthlySavings().toLocaleString() + '원 [시험용 설계값]') + '</span></div>';
+      (SCHOOL_MODE&&!state.flags.studyPath?'고1 선택 전 미확정':militaryActive() ? '복무 중 0원 [시험용 설계값]' : monthlySavings().toLocaleString() + '원 [시험용 설계값]') + '</span></div>';
     rows += '<div class="row"><span>생활비 차감</span><span>미구현 · 시험용 순저축만 반영</span></div>';
     rows += '<p class="note economy-model-note">생활경제 모형: 시험 순저축 v1 · 실제 급여·학비·세금별 현금흐름은 아직 연결하지 않았어요. 기존 기록을 실비 모형으로 바꾸지 않아요.</p>';
-    rows += assetReviewHtml();
+    rows += assetReviewHtml(SCHOOL_MODE?{available:false,reason:'separate-school-calendar-model'}:undefined);
     rows += savingsLedgerHtml();
     }else rows+=cashEventsHtml();
     rows += interestLedgerHtml();
@@ -1525,7 +1550,7 @@
         rows += '<div class="row market-share"><span>└ ' + esc(u ? u.name : p) + ' 시장 비중</span><span>산정 불가 — ' + mInfo.label + '</span></div>';
       }
     }
-    rows += '<div class="product-list"><div>해금 상품</div><ul>' +
+    rows += schoolDataGap()?'<p class="note">자료공백 구간: 상품 접근 고증 미완료, 매매 차단</p>':'<div class="product-list"><div>해금 상품</div><ul>' +
       unlockedProducts().map(u => '<li>' + esc(u.name) + '</li>').join('') + '</ul></div>';
     const lives = readLives();
     if (!lives) return;
@@ -1542,7 +1567,9 @@
         : ' · 투입금 ' + (Number.isFinite(latestFill.amount) ? latestFill.amount.toLocaleString() + '원' : '미확인');
       rows += '<div class="product-list"><div>최근 체결 [지연체결 시연]</div><p class="note">' + esc(u.name || latestFill.product) + ' ' + (latestFill.kind === 'buy-fill' ? '매수' : '매도') + ' · 체결 관측월 ' + esc(latestFill.month) + ' · 가격 기준일 ' + esc(latestFill.ptDate) + ' · 지점 ' + Number(latestFill.price).toLocaleString() + (latestFill.usableFrom ? ' · 시연 이용 가능일 ' + esc(latestFill.usableFrom) : '') + resultNote + '. 실제 거래 체결·세금·수수료를 재현한 것은 아니에요.</p></div>';
     }
-    rows+='<p><a href="'+(CASH_MODE?'?':'?economy=cash-events-trial')+'">'+(CASH_MODE?'기존 시험순저축 회귀로 돌아가기':'기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기')+'</a></p>';
+    if(SCHOOL_MODE)rows+=schoolTrialNote();
+    else rows+='<p><a href="'+(CASH_MODE?'?':'?economy=cash-events-trial')+'">'+(CASH_MODE?'기존 시험순저축 회귀로 돌아가기':'기존 저장을 그대로 두고 별도 현금사건 시험 회귀 보기')+'</a></p>';
+    if(!SCHOOL_MODE&&!CASH_MODE)rows+='<p><a id="school-mode-entry" href="?start=school-calendar-trial">기존 저장을 그대로 두고 생년월별 고1 달력 시작 시험 보기</a></p>';
     el.innerHTML = rows;
     if(CASH_MODE){const b=document.getElementById('cash-retry');if(b)b.onclick=()=>renderCashRepay();}
     if (state.pendingOrders && state.pendingOrders.length) {
@@ -1606,7 +1633,7 @@
 
   function activeDecisionComparisonHtml(lives, index) {
     const current=buildDecisionReview();
-    let html='<section class="active-decision-review" aria-label="이번 회귀와 지난 회귀 선택 복기"><h3>이번 회귀와 지난 회귀 선택 복기</h3><p class="note">현재 게임 월 '+esc(state.month)+'까지 날짜 근거가 있는 선택을 같은 달끼리 나란히 봅니다. 같은 달이어도 생년·진로·진행 조건은 다를 수 있고, 과거 기록의 생년 근거는 저장하지 않았습니다. 선택이 없는 칸은 행동이 없었다는 증거가 아닙니다. 수익 효과·추천·현실 진로우열을 계산하지 않습니다. 자동일정 확인은 사용자 선택과 따로 표시합니다.</p><div class="current-decision-review"><h4>이번 회귀 · 진행 중</h4>'+decisionReviewHtml({decisionReview:current}).replace('class="decision-review"','class="live-decision-timeline"').replaceAll('class="decision-group"','class="live-decision-group"')+'</div>';
+    let html='<section class="active-decision-review" aria-label="이번 회귀와 지난 회귀 선택 복기"><h3>이번 회귀와 지난 회귀 선택 복기</h3><p class="note">현재 게임 월 '+esc(state.month)+'까지 날짜 근거가 있는 선택을 같은 달끼리 나란히 봅니다. 같은 달이어도 생년·진로·진행 조건은 다를 수 있고, 과거 기록의 생년 근거가 없을 수 있습니다. 선택이 없는 칸은 행동이 없었다는 증거가 아닙니다. 수익 효과·추천·현실 진로우열을 계산하지 않습니다. 자동일정 확인은 사용자 선택과 따로 표시합니다.</p><div class="current-decision-review"><h4>이번 회귀 · 진행 중</h4>'+decisionReviewHtml({decisionReview:current}).replace('class="decision-review"','class="live-decision-timeline"').replaceAll('class="decision-group"','class="live-decision-group"')+'</div>';
     if(!lives.length)return html+'<p class="note">비교할 지난 회귀가 아직 없습니다. 이번 기록은 진행 중인 실제 선택만 읽습니다.</p></section>';
     html+='<label for="decision-life-select">함께 볼 지난 회귀</label> <select id="decision-life-select"><option value="">기록을 고르세요</option>'+lives.map((l,i)=>'<option value="'+i+'" '+(index===i?'selected':'')+'>#'+(i+1)+' · '+esc(l.ended||'종료월 미기록')+'</option>').join('')+'</select>';
     if(index===null)return html+'</section>';

@@ -492,7 +492,7 @@
     if(row.status!=='due'||(action==='paid'&&state.cash<cost))return;
     if(action==='paid'){state.cash-=cost;row.paid=cost;}
     row.status=action;
-    state.turnCount++;state.history.push({month:state.month,choice:'cash-event:'+action+':'+row.month});
+    state.turnCount++;state.history.push({month:state.month,decisionMonth:state.month,choice:'cash-event:'+action+':'+row.month});
     if(save())render();
   }
   function renderCashDue() {
@@ -509,7 +509,7 @@
     if(storageWriteBlocked)return showStorageWriteUnavailable();
     const rows=state.cashEvents.rows.filter(r=>r.status==='deferred'), cost=rows.reduce((v,r)=>v+r.living+r.tuition-r.paid,0);
     document.getElementById('turn-card').innerHTML='<div class="date">'+state.month+' · 미납 다시 확인</div><h2>보류한 가상청구 납부</h2><p>보류 '+rows.length+'건 / 합계 '+cost.toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원. 일괄 전액만 납부하며 부족하면 진행할 수 없습니다. 현재 월의 선택대기 청구는 이 합계와 별도입니다.</p><p>원래 월수입·이자는 다시 적용하지 않고 월·뉴스·진로도 진행하지 않습니다. 기존 순저축 회귀는 건드리지 않습니다.</p>';
-    const box=document.getElementById('choices');box.innerHTML='';const pay=document.createElement('button');pay.id='cash-repay-confirm';pay.textContent='보류 미납 전액 납부 확인';pay.disabled=!rows.length||state.cash<cost;pay.onclick=()=>{if(storageWriteBlocked||state.cash<cost||rows.some(r=>r.status!=='deferred'))return;if(!confirm('보류 미납 '+cost.toLocaleString()+'원을 현금에서 가상 납부할까요?'))return;state.cash-=cost;rows.forEach(r=>{r.paid=r.living+r.tuition;r.status='paid'});state.history.push({month:state.month,choice:'cash-event:repay:'+rows.length});if(save())render()};box.append(pay);const cancel=document.createElement('button');cancel.id='cash-repay-cancel';cancel.textContent='취소 (게임으로 돌아가기)';cancel.onclick=()=>render();box.append(cancel);renderPortfolio();
+    const box=document.getElementById('choices');box.innerHTML='';const pay=document.createElement('button');pay.id='cash-repay-confirm';pay.textContent='보류 미납 전액 납부 확인';pay.disabled=!rows.length||state.cash<cost;pay.onclick=()=>{if(storageWriteBlocked||state.cash<cost||rows.some(r=>r.status!=='deferred'))return;if(!confirm('보류 미납 '+cost.toLocaleString()+'원을 현금에서 가상 납부할까요?'))return;state.cash-=cost;rows.forEach(r=>{r.paid=r.living+r.tuition;r.status='paid'});state.history.push({month:state.month,decisionMonth:state.month,choice:'cash-event:repay:'+rows.length});if(save())render()};box.append(pay);const cancel=document.createElement('button');cancel.id='cash-repay-cancel';cancel.textContent='취소 (게임으로 돌아가기)';cancel.onclick=()=>render();box.append(cancel);renderPortfolio();
   }
 
   function render() {
@@ -701,9 +701,29 @@
       (state.flags.demoScenario === 'pre1996-study' ? ' · 시연용 시나리오: 진학 루트 확정·재학 진행 상태로 시작 [시연 제약]' : '');
   }
 
+  // Cash-mode choice context only. Does not change eligibility, cash flow, or saved state.
+  function cashLifeOutlookHtml(turn) {
+    if (turn.kind !== 'life' || !turn.event || !['life-hs1','life-grad','life-scenario'].includes(turn.event.id)) return '';
+    const id=turn.event.id, c=cashSummary(), gross=totalAssets();
+    const row=(title,text)=>'<section style="padding:10px 0;border-top:1px solid #ddd;overflow-wrap:anywhere"><h3 style="font-size:1rem;margin:0 0 6px">'+esc(title)+'</h3><p style="margin:0">'+esc(text)+'</p></section>';
+    let body='';
+    if(id==='life-hs1') {
+      body+=row('공부와 알바의 현금 흐름 [임의값]', '공부·재학 중 월수입0원, 고교 알바 월수입30만원입니다. 고교 졸업 뒤 알바 경로는 전업으로 이어져 월수입0원이며 별도 취업 선택은 없습니다. 공부 경로는 재학48개월을 채운 졸업 선택에서 취업 월수입30만원 또는 전업0원을 고릅니다. 둘 다 매월 생활가상청구10만원이 있고, 재학 경로는 최초 재학 월진행에 학비가상청구80만원이 한 번 있습니다. 기존 월 순저축은 적용하지 않습니다.');
+    } else if(id==='life-scenario') {
+      body+=row('시작 이력의 차이 [임의값]', '진학 시나리오는 대학 재학과 일부 복무 이력을 가정하며, 최초 재학 월진행에 학비가상청구80만원이 한 번 있습니다. 일반 시작은 진로 이력 미정이며 자동 취업이나 월수입을 주지 않습니다. 고교 알바·졸업취업 외에는 월수입0원, 두 시작 모두 월생활가상청구10만원입니다. 시작 전 소득·지출·성적은 소급 계산하지 않으며 같은 조건의 진로 비교가 아닙니다. 기존 월 순저축은 적용하지 않습니다.');
+    } else {
+      body+=row('졸업 뒤 현금과 주문 기회 [임의값]', '취업은 다음 월진행부터 월수입30만원, 전업은0원입니다. 둘 다 월생활가상청구10만원을 유지합니다. 취업은 분기 정산 전용 턴에서 주문하고 전업은 뉴스·평온 턴에서도 주문할 수 있지만 상품 해금·관측 시세·잔고·복무 제한을 따릅니다. 수입은 매출·순수익·실제급여가 아닌 임의값이고 기존 순저축은 적용하지 않습니다.');
+      const short=Math.max(0,FULLTIME_GATE-gross);
+      body+=row('지금 전업 버튼이 보는 값', '총자산(미납 차감 전) '+gross.toLocaleString()+'원 / 시험하한 '+FULLTIME_GATE.toLocaleString()+'원. '+(short?'현재 '+short.toLocaleString()+'원 부족해 전업 버튼이 잠깁니다.':'현재 하한을 충족해 전업 버튼을 고를 수 있습니다.')+' 미납 '+c.unpaid.toLocaleString()+'원 / 미납차감 시연순자산 '+(gross-c.unpaid).toLocaleString()+'원 / 사용가능현금 '+state.cash.toLocaleString()+'원. 현재 버튼은 미납차감 순자산이나 사용가능현금이 아니라 총자산으로 판정합니다. 예약금·상품평가도 총자산에 포함되므로 이 하한 충족은 납부가능·실제생계가능 판정이 아닙니다.');
+    }
+    body+=row('그대로 남은 일정과 불균형', '복무 중 월수입0원에도 생활가상청구10만원은 유지합니다. 복무 중 재학개월은 멈추고 매수비중 상한30%를 적용합니다. 대학졸업 전업은 총자산1200만원 하한을 검사하지만 알바 뒤 전업에는 같은 검사가 없습니다. 기존 시험규칙을 유지한 차이이며 진로균형을 검증한 결과가 아닙니다.');
+    body+=row('미납은 없어지지 않아요', '납부는 사용가능현금으로 전액만 가능합니다. 명시 보류는 미납을 남기며 학적·복무 일정은 바꾸지 않습니다. 자동대출·매도·가족송금은 없고 세금·장학·환급·연체료·실업·학업성과는 미구현입니다. 임의 시험값으로 미래자산·유리한 진로·현실 납부정책을 예측하지 않습니다.');
+    return '<details class="life-outlook cash-life-outlook" style="margin:14px 0;padding:10px;border:1px solid #b8c8b6;border-radius:8px"><summary style="cursor:pointer">선택 전, 현금 흐름과 남은 조건 비교 [임의값]</summary><p class="note">현재 현금사건 시험규칙만 읽습니다. 열기·닫기는 월·현금·저장을 바꾸지 않으며 아래 진로 버튼을 눌러야 선택됩니다.</p>'+body+'</details>';
+  }
+
   // Read-only map of the rules already implemented. No forecast, new fee, or state write.
   function lifeOutlookHtml(turn) {
-    if(CASH_MODE)return '<p class="note">현금사건 시험모형은 기존 순저축을 적용하지 않아요. 월수입·가상청구·미납은 자산표에서 구분합니다. 재학·복무·주문기회/전업하한은 기존 시험규칙이며 보류가 학적을 바꾸지는 않습니다.</p>';
+    if(CASH_MODE)return cashLifeOutlookHtml(turn);
     if (turn.kind !== 'life' || !turn.event || !['life-hs1', 'life-grad', 'life-scenario'].includes(turn.event.id)) return '';
     const id = turn.event.id, b = state.flags.birth;
     const row = (title, text) => '<section style="padding:10px 0;border-top:1px solid #ddd;overflow-wrap:anywhere"><h3 style="font-size:1rem;margin:0 0 6px">' + esc(title) + '</h3><p style="margin:0">' + esc(text) + '</p></section>';
@@ -1039,6 +1059,7 @@
       if (!save()) return;
       const record = {
         transferId: state.archiveTransferId,
+        decisionReview: buildDecisionReview(),
         ended: id === 'record-and-reset-end' ? GAME_END : state.month, observationMonth: state.month, turnCount: state.turnCount,
         totalAssets: totalAssets(), assetReview: CASH_MODE?{available:false,reason:'separate-cash-events-model'}:ReturnAssetReview.review(state, totalAssets()), ...(CASH_MODE?{cashFlowSummary:cashSummary()}:{}), cause: causeMap[id],
         path: state.flags.studyPath ? (state.flags.studyPath + (state.flags.career ? '-' + state.flags.career : (state.flags.studyPath === 'parttime' ? '-fulltime' : ''))) : null, chaos: state.chaos
@@ -1123,7 +1144,7 @@
       }
       state.turnCount += k;
       state.lastSkip = k > 0 ? { from: from, months: k, settlements: ks } : null;
-      state.history.push({ month: state.month, choice: 'skip-to-news:' + k });
+      state.history.push({ month: state.month, decisionMonth:from,choice: 'skip-to-news:' + k });
       save();
       render();
       return;
@@ -1134,6 +1155,7 @@
   function finishTurn(ev, choiceId) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
     if (storageReadBlocked) return showStorageReadUnavailable();
+    const decisionMonth = state.month;
     const completedSettlement = !ev && nextTurn().settlement;
     if (completedSettlement) state.flags.settledMonth = state.month;
     if (ev && !ev._dynamic) state.eventIndex++;
@@ -1144,7 +1166,7 @@
     const pendingNews = next && next.date.slice(0, 7) <= state.month;
     const pendingLife = nlev && nlev.date.slice(0, 7) <= state.month && (!next || nlev.date <= next.date);
     if (!pendingNews && !pendingLife && !settlementDue() && state.month <= GAME_END) advanceMonth();
-    state.history.push({ month: state.month, choice: choiceId });
+    state.history.push({ month: state.month, decisionMonth, choice: choiceId });
     save();
     render();
   }
@@ -1279,7 +1301,7 @@
       state.holdings[o.product] = h;
     }
     state.pendingOrders = state.pendingOrders.filter(x => x.id !== id);
-    state.history.push({ month: state.month, choice: 'cancel-order:' + o.product });
+    state.history.push({ month: state.month, decisionMonth:state.month,choice: 'cancel-order:' + o.product });
     save(); render();
   }
 
@@ -1548,6 +1570,36 @@
     if (dl) dl.onclick = () => renderDashboard();
   }
 
+  function decisionInfo(choice) {
+    const life={ 'life:scenario-study':'진학 시나리오로 시작 [과거 재학·일부 복무는 가정]', 'life:scenario-plain':'진로 이력 미정으로 시작', 'life:study':'공부·진학 선택', 'life:parttime':'고교 알바 경로 선택', 'life:job':'대학 졸업 후 취업 선택', 'life:fulltime':'대학 졸업 후 전업 선택', 'life:go-now':'바로 입대 선택', 'life:defer-1y':'입대1년 유예 선택 [시험가정]' };
+    if(Object.prototype.hasOwnProperty.call(life,choice))return {group:'진로·복무 선택',label:life[choice]};
+    if(choice==='discharge-ok')return {group:'자동일정 확인',label:'자동 전역일정 확인 [전역일을 고른 선택이 아님]'};
+    let m=typeof choice==='string'&&choice.match(/^cash-event:(paid|deferred):(\d{4}-(?:0[1-9]|1[0-2]))$/);
+    if(m)return {group:'가상청구 선택',label:m[2]+' 청구 '+(m[1]==='paid'?'전액 가상납부':'미납을 남기고 보류')+' [임의값]'};
+    m=typeof choice==='string'&&choice.match(/^cash-event:repay:([1-9]\d*)$/);
+    if(m)return {group:'가상청구 선택',label:'보류 청구 '+m[1]+'건 재납부 [임의값]'};
+    m=typeof choice==='string'&&choice.match(/^(enter|enter-order|sell|sell-order):([a-z0-9]+):(\d+)$/);
+    if(m&&Number(m[3])<=100){const u=DATA.unlocks.find(u=>u.product===m[2]);if(u)return {group:'매매 선택',label:u.name+' '+(m[1].startsWith('enter')?'매수':'매도')+(m[1].endsWith('order')?' 신청':' 실행')+' · 입력비중 '+m[3]+'% [실제 거래 아님]'};}
+    m=typeof choice==='string'&&choice.match(/^cancel-order:([a-z0-9]+)$/);
+    if(m){const u=DATA.unlocks.find(u=>u.product===m[1]);if(u)return {group:'매매 선택',label:u.name+' 대기주문 취소'};}
+    return null;
+  }
+  function buildDecisionReview() {
+    const relevant=state.history.filter(h=>h&&decisionInfo(h.choice));
+    const exact=relevant.filter(h=>typeof h.decisionMonth==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(h.decisionMonth));
+    return {version:1,source:'recorded-user-actions-v1',missingDateCount:relevant.length-exact.length,entries:exact.map(h=>({month:h.decisionMonth,choice:h.choice}))};
+  }
+  function decisionReviewHtml(record) {
+    const r=record.decisionReview, mon=x=>typeof x==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(x);
+    if(!r||r.version!==1||r.source!=='recorded-user-actions-v1'||!Number.isInteger(r.missingDateCount)||r.missingDateCount<0||!Array.isArray(r.entries)||r.entries.length>2000||r.entries.some(e=>!e||!mon(e.month)||!decisionInfo(e.choice)))return '<p class="note decision-review-missing">주요선택 연표 근거 미기록·미확인 - 과거 선택월이나 자동이력을 추정하지 않습니다.</p>';
+    const groups=['진로·복무·매매 흐름','가상청구 선택'];
+    let html='<details class="decision-review"><summary>주요선택 연표 · 날짜기록 '+r.entries.length+'건</summary><p class="note">실제 버튼을 확정하기 전 게임 월입니다. 과거 history의 진행 후 월을 선택월로 바꾸지 않았습니다. 소급 가정한 재학·복무·자동졸업은 사용자가 고른 선택으로 채우지 않습니다. 매매 신청은 체결과 다르며, 납부는 임의 시험청구입니다. 아래 번호는 이 연표 안의 저장 순서입니다.</p>';
+    if(r.missingDateCount)html+='<p class="note decision-review-partial">선택월 근거가 없는 이전 주요행동 '+r.missingDateCount+'건은 연표에서 제외했습니다. 기존 월을 거꾸로 추정하지 않았습니다.</p>';
+    if(!r.entries.length)html+='<p class="note">날짜 근거가 남은 주요선택이 없습니다. 과거를 보완해 만들지 않습니다.</p>';
+    for(const group of groups){const rows=r.entries.map((e,i)=>({...e,index:i+1,info:decisionInfo(e.choice)})).filter(e=>group==='가상청구 선택'?e.info.group===group:e.info.group!=='가상청구 선택');if(!rows.length)continue;html+='<details class="decision-group"><summary>'+esc(group)+' · '+rows.length+'건</summary><ol style="padding-left:22px;overflow-wrap:anywhere">'+rows.map(e=>'<li value="'+e.index+'"><strong>'+esc(e.month)+'</strong> · ['+esc(e.info.group)+'] '+esc(e.info.label)+'</li>').join('')+'</ol></details>';}
+    return html+'</details>';
+  }
+
   // 회귀 기록 대시보드 (1차 기획 확정 10: 단회성 인생 + 영구 기록)
   function renderDashboard(selected = []) {
     if (storageWriteBlocked) return showStorageWriteUnavailable();
@@ -1582,7 +1634,7 @@
         const pathTxt = (l.path && pathLabel[l.path]) ? pathLabel[l.path] : '진로 미기록';
         html += '<div style="border-bottom:1px solid var(--line);padding:8px 0">' +
           '<div class="row"><span>#' + (i + 1) + ' · ' + l.ended + ' 종료</span><span>' + (causeLabel[l.cause] || l.cause || '기록 없음') + '</span></div>' +
-          '<div class="row life-record-assets"><span>' + pathTxt + '</span><strong>최종 자산 ' + (l.totalAssets || 0).toLocaleString() + '원' + (l === best && !CASH_MODE ? ' · 최고 기록' : '') + '</strong></div>' + cashRecordHtml(l) +
+          '<div class="row life-record-assets"><span>' + pathTxt + '</span><strong>최종 자산 ' + (l.totalAssets || 0).toLocaleString() + '원' + (l === best && !CASH_MODE ? ' · 최고 기록' : '') + '</strong></div>' + cashRecordHtml(l) + decisionReviewHtml(l) +
           (CASH_MODE?'':assetReviewHtml(ReturnAssetReview.inspectSnapshot(l.assetReview,l.totalAssets),true)) + (lives.length>1&&!CASH_MODE?'<button type="button" class="life-select" data-life-index="'+i+'" aria-pressed="'+selected.includes(i)+'" '+(!selected.includes(i)&&selected.length===2?'disabled':'')+'>'+ (selected.includes(i)?'#'+(i+1)+' 비교에서 빼기':'#'+(i+1)+' 비교에 넣기')+'</button>':'')+'</div>';
       });
       html += CASH_MODE ? '<p class="note">별도 현금사건 시험 회귀기록입니다. 총자산은 미납 차감 전입니다. 각 기록의 수입·납부·미납·시연순자산을 함께 읽고 실제 진로우열·투자실력·수익률 순위로 해석하지 마세요. 원래 시험순저축 모형의 기록과 합치지 않습니다. 이 기기에만 저장됩니다.</p>' : '<p class="note">최고 기록은 시연 총자산 기준이며 투자 실력·수익률 순위가 아니에요. 진행 개월과 진로의 시험 순저축이 다르면 단순 비교할 수 없어요. 실제 학비·생활비·세금은 미연결이에요.</p><p class="note">고정 목표 자산은 없습니다. 최고 기록 갱신이 이 게임의 장기 목표예요. 기록은 이 기기에만 저장됩니다.</p>';

@@ -11,6 +11,7 @@ text=text.replace('fetch("game-data.json.gz")','fetch("'+files['game-data.json.g
 if(args.path.endsWith('-main.jsx'))text='window.__returnAssetPaths='+JSON.stringify(assets)+';\n'+text;
 text=text.replace('charImg.src = "" + visualCommonFile','charImg.src = window.__returnAssetPaths[visualCommonFile]');
 text=text.replace('visualCommonPropEl.src = "prop-" + visualCommonProp + "-common.png"','visualCommonPropEl.src = window.__returnAssetPaths["prop-" + visualCommonProp + "-common.png"]');
+if(args.path.endsWith("20-game-bundle.js"))text=text.replace("        return cbody;","        if (id === \"life-hs1\") return '<p class=\"note choice-first-note\">아래 두 진로 중 하나를 고르세요. 금액과 일정은 게임설계값이며 실제 급여·학비·입시를 뜻하지 않습니다.</p><details class=\"life-outlook choice-first-outlook\"><summary>선택 전 비교: 학비·생활비와 다음 갈림길</summary><p class=\"note\">펼쳐 읽어도 선택·월·자산은 바뀌지 않습니다. 진로 선택은 아래 버튼에서 합니다.</p>' + cbody + '</details>';\n        return cbody;");
 return {contents:text,loader:args.path.endsWith('.jsx')?'jsx':'js'};});
 }}]});
 await rename('1-game.css','5-game.css');

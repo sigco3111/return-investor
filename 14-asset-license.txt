@@ -1,0 +1,38 @@
+MIT License
+
+Copyright (c) 2026 리턴 제작자
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without
+limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom
+the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Scope
+
+This license applies to the project's directly generated PNG background and
+character and prop assets named *-common.png in the repository root.
+The assets are fictional generated game art, not photographs, historical
+reconstructions or depictions of a real individual. A grant is made only to the
+extent rights are held; no claim is made that every generated pixel is
+independently eligible for copyright protection.
+
+It does not relicense external news articles, photographs, market databases,
+statistics, source websites, names, trademarks, or third-party materials.
+This art license does not apply to those materials. Other repository files
+retain their separately stated licensing status.
+
+
+Dated SPY/FXI fund net-asset observations are public financial filing data with exact primary-source attribution in fund-scale-data.mjs. They are not licensed by this game under MIT. Game concentration proxy only, not a real market-impact model. User approval to publish does not establish third-party permission. First global publication and historically available Korean retail access are not established.

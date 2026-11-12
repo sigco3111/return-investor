@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   // Explicit reading transitions only. No movement on boot, disclosures,
-  // product/order controls, unchanged decisions, failures or modal confirmations.
+  // same-screen inputs, unchanged decisions, failures or modal confirmations.
   function readingKey() {
     const card = document.getElementById('turn-card');
     return [card?.querySelector('.date')?.textContent, card?.querySelector('h2')?.textContent].join('|');
@@ -40,8 +40,9 @@
     const firstCareer = ['고1, 시간을 어디에 쓸까', '재학 중 시간 배분 방침을 정한다'].includes(document.querySelector('#turn-card h2')?.textContent);
     const skipPreview = document.querySelector('#turn-card h2')?.textContent === '여기까지 진행됩니다';
     const ordinaryChoice = button.parentElement?.id === 'choices' && (firstCareer || /^(유지|다음 달로 진입|건너뛰기|다음 뉴스까지 건너뛰기)/.test(button.textContent) || (skipPreview && /^(\d+개월 건너뛰기 실행|취소 \(돌아가기\))$/.test(button.textContent)));
+    const positionTransition = button.parentElement?.id === 'choices' && (['상품 선택', '비중 결정'].includes(document.querySelector('#turn-card h2')?.textContent) || ['리밸런싱 (비중 조정)', '이 뉴스에 대응해 포지션 조정'].includes(button.textContent));
     const start = button.id === 'cash-main-start';
-    if (!start && !ordinaryChoice && !chapterControl) return;
+    if (!start && !ordinaryChoice && !chapterControl && !positionTransition) return;
     const previousKey = readingKey();
     requestAnimationFrame(function () {
       if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay') || document.querySelector('main')?.inert) return;
@@ -53,6 +54,30 @@
       showReadingStart();
     });
   }, true);
+  function updateProductGuide() {
+    const card = document.getElementById('turn-card');
+    if (card?.querySelector('h2')?.textContent !== '상품 선택' || !/포지션 조정 1\/2/.test(card.querySelector('.date')?.textContent || '')) return;
+    for (const button of document.querySelectorAll('#choices > button')) {
+      if (button.dataset.productGuide === 'ready') continue;
+      const originalText = button.textContent;
+      const start = originalText.indexOf('Yahoo Finance의 실제 일별 Close를 사용합니다.');
+      const end = originalText.indexOf(' · 시세 지점', start);
+      if (!originalText.includes('ETF') || start < 0 || end < 0 || !originalText.includes('배당현금도 지급하지 않아 총수익률이 아닙니다.')) continue;
+      button.dataset.productGuide = 'ready';
+      button.textContent = originalText.slice(0, start).trim() + originalText.slice(end);
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = '분할보정 단위이며 당시 1주의 원가격이 아닙니다. 배당 미지급으로 총수익률이 아니며, 가상 원화환산입니다. 실제 당시 체결가·거래비용·세금·가입자격을 재현하지 않습니다.';
+      const detail = document.createElement('details');
+      detail.className = 'choice-first-outlook product-price-detail';
+      const summary = document.createElement('summary');
+      summary.textContent = '가격 단위·분할·배당·체결 한계 원문';
+      const original = document.createElement('p');
+      original.textContent = originalText;
+      detail.append(summary, original);
+      button.after(note, detail);
+    }
+  }
   function updateChoiceGuide() {
     const card = document.getElementById('turn-card');
     if (!card) return;
@@ -134,6 +159,7 @@
     detail.append(summary, original);
     intro.after(detail);
   }
-  new MutationObserver(function () { updateChoiceGuide(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
+  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
   updateChoiceGuide();
+  updateProductGuide();
 })();

@@ -977,3 +977,7 @@ header p {
 .vn-prop[hidden] {
   display: none;
 }
+
+.choice-first-outlook {margin:12px 0;border:1px solid #d4d8cf;border-radius:8px;padding:0 10px;}
+.choice-first-outlook>summary {min-height:44px;padding:12px 0;box-sizing:border-box;cursor:pointer;}
+.choice-first-note {margin:12px 0 8px;}

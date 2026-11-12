@@ -1,19 +1,24 @@
 (function () {
   'use strict';
-  // A new game replaces the long birth/rules form above the old scroll position.
-  // Move once, only for an explicit successful main-start activation. Reopening a
-  // saved game or expanding an explanation must not move the user's reading point.
+  // Entry actions replace long content above the previous button position.
+  // Move only after an explicit main start or the first career / school-policy selection.
+  // Reopening saves, monthly actions and disclosure toggles do not move focus.
   document.addEventListener('click', function (event) {
-    const start = event.target.closest && event.target.closest('#cash-main-start');
-    if (!start || start.disabled) return;
+    const button = event.target.closest && event.target.closest('button');
+    if (!button || button.disabled) return;
+    const oldHeading = document.querySelector('#turn-card h2');
+    const firstCareer = button.parentElement?.id === 'choices' && ['고1, 시간을 어디에 쓸까', '재학 중 시간 배분 방침을 정한다'].includes(oldHeading?.textContent);
+    if (button.id !== 'cash-main-start' && !firstCareer) return;
     requestAnimationFrame(function () {
       if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay')) return;
       const card = document.getElementById('turn-card');
       const heading = card && card.querySelector('h2');
-      if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
-      heading.setAttribute('tabindex', '-1');
-      heading.focus({ preventScroll: true });
-      card.scrollIntoView({ block: 'start', behavior: 'instant' });
+      if (!heading || heading === oldHeading || !document.querySelector('#choices > button:not(:disabled)')) return;
+      const chapter = document.getElementById('vn-first-chapter');
+      const target = chapter || heading;
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+      (chapter || card).scrollIntoView({ block: 'start', behavior: 'instant' });
     });
   }, true);
   function updateChoiceGuide() {

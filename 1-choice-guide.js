@@ -13,10 +13,11 @@
     const heading = card?.querySelector('h2');
     if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
     const chapter = document.getElementById('vn-first-chapter');
-    const target = chapter || heading;
+    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
+    const target = chapter || result || heading;
     target.setAttribute('tabindex', '-1');
     target.focus({ preventScroll: true });
-    (chapter || card).scrollIntoView({ block: 'start', behavior: 'instant' });
+    (chapter || result || card).scrollIntoView({ block: 'start', behavior: 'instant' });
   }
   function finishSchoolReading() {
     if (!pendingSchoolReading) return;

@@ -12,7 +12,23 @@ async function boot() {
   const { App } = await import("./App");
   createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
 }
-boot().catch((e) => {
+async function beginWithGameLease() {
+  if (!navigator.locks?.request) {
+    if (window.localStorage.getItem('return-storage-slot.v1') !== null) throw Error('이 브라우저에서는 가져온 저장 공간을 안전하게 열 수 없습니다. 저장은 바꾸지 않았습니다. 안전 잠금을 지원하는 브라우저에서 열어 주세요.');
+    window.__returnGameLeaseActive = true;
+    await boot();
+    return;
+  }
+  await navigator.locks.request('return-game-session-v1', {mode:'exclusive',ifAvailable:true}, async lock => {
+    if (!lock) throw Error('다른 탭에서 게임이 열려 있어 시작하지 않았습니다. 진행 중인 탭을 닫은 뒤 다시 열어 주세요. 저장을 바꾸지 않았습니다.');
+    window.__returnGameLeaseActive = true;
+    const closed = new Promise(resolve => addEventListener('pagehide', () => { window.__returnGameLeaseActive = false; resolve(); }, {once:true}));
+    addEventListener('pageshow', e => {if(e.persisted) location.reload();});
+    await boot();
+    await closed;
+  });
+}
+beginWithGameLease().catch((e) => {
   const el = document.getElementById("root");
   el.textContent = "\uC2E4\uD589 \uC900\uBE44 \uC2E4\uD328: " + String(e.message || e) + " \uAE30\uC874 \uC800\uC7A5\uC740 \uBCC0\uACBD\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.";
 });

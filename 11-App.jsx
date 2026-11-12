@@ -357,8 +357,8 @@ export function App() {
       if (!SERIESLESS.length) return;
       document.querySelectorAll("main button").forEach((b) => {
         const txt = b.textContent || "";
-        if (txt.includes("\uC2DC\uC138 \uC9C0\uC810 \uC5C6\uC74C") && !txt.includes("\uC2DC\uACC4\uC5F4 \uC790\uB8CC \uBBF8\uD655\uBCF4") && SERIESLESS.some((n) => txt.includes(n))) {
-          b.textContent = txt.replace("\u2014 \uC2DC\uC138 \uC9C0\uC810 \uC5C6\uC74C", "\u2014 \uC2DC\uACC4\uC5F4 \uC790\uB8CC \uBBF8\uD655\uBCF4(\uC2DC\uC5F0 \uD45C\uC2DC\uB9CC \xB7 \uC8FC\uBB38 \uBD88\uAC00)");
+        if (txt.includes("시세 지점 없음") && !txt.includes("시계열 자료 미확보") && SERIESLESS.some((n) => txt.includes(n))) {
+          b.textContent = txt.replace("— 시세 지점 없음", "— 시계열 자료 미확보(시연 표시만 \xB7 주문 불가)");
         }
       });
     };
@@ -370,22 +370,22 @@ export function App() {
       box.open = true;
       box.setAttribute("data-sig", sigKey);
       const sum = document.createElement("summary");
-      sum.textContent = "\uD310\uB2E8 \uCC38\uACE0 \u2014 \uC774 \uD310\uB2E8\uC77C\uAE4C\uC9C0 \uAD00\uCE21 \uAC00\uB2A5\uD55C \uC790\uB8CC";
+      sum.textContent = "판단 참고 — 이 판단일까지 관측 가능한 자료";
       box.appendChild(sum);
       box.appendChild(marketEl(effDate, postClose));
       const cases = priorCases(panelEvents, panelPrices, ev, effDate, postClose);
       const head = document.createElement("p");
       head.className = "dp-head";
-      head.textContent = cases.length ? "\uAC19\uC740 \uC601\uD5A5 \uD0DC\uADF8\uC758 \uC9C1\uC804 \uC0AC\uAC74\uACFC \uADF8 \uB4A4 \uD655\uBCF4 \uC9C0\uC810(\uC2DC\uAE30 \uCC38\uACE0, \uC778\uACFC \uC544\uB2D8):" : "\uAC19\uC740 \uC601\uD5A5 \uD0DC\uADF8\uC758 \uC9C1\uC804 \uC0AC\uAC74 \uC911 \uC774 \uC2DC\uC810\uC5D0 \uACC4\uC0B0 \uAC00\uB2A5\uD55C \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4(\uC9C0\uC810 \uBD80\uC871 \uB610\uB294 \uCCAB \uC0AC\uB840).";
+      head.textContent = cases.length ? "같은 영향 태그의 직전 사건과 그 뒤 확보 지점(시기 참고, 인과 아님):" : "같은 영향 태그의 직전 사건 중 이 시점에 계산 가능한 결과가 없습니다(지점 부족 또는 첫 사례).";
       box.appendChild(head);
       if (cases.length) {
         const ul = document.createElement("ul");
         for (const c of cases) {
           const li = document.createElement("li");
-          li.textContent = c.month + " \xB7 " + c.title + " \u2014 " + c.changes.map((ch) => {
-            const fwd = (f, n) => f === null ? "" : " " + n + "\uAC1C\uC6D4 \uCC3D \uD655\uBCF4 \uC9C0\uC810 " + (f.pct >= 0 ? "\u25B2" : "\u25BC") + Math.abs(f.pct) + "%(" + f.date + ")";
+          li.textContent = c.month + " \xB7 " + c.title + " — " + c.changes.map((ch) => {
+            const fwd = (f, n) => f === null ? "" : " " + n + "개월 창 확보 지점 " + (f.pct >= 0 ? "▲" : "▼") + Math.abs(f.pct) + "%(" + f.date + ")";
             const parts = [fwd(ch.fwd1, 1), fwd(ch.fwd3, 3)].filter(Boolean);
-            return ch.label + " " + parts.join(" \xB7 ") + " (\uAE30\uC900 " + ch.baseDate + " \uC9C0\uC810)";
+            return ch.label + " " + parts.join(" \xB7 ") + " (기준 " + ch.baseDate + " 지점)";
           }).join(" / ");
           ul.appendChild(li);
         }
@@ -393,7 +393,7 @@ export function App() {
       }
       const foot = document.createElement("p");
       foot.className = "dp-foot";
-      foot.textContent = "\uC774 \uD310\uB2E8\uC77C(" + effDate + (postClose ? ", \uC7A5 \uB9C8\uAC10 \uD6C4" : "") + ")\uC5D0 \uAD00\uCE21 \uAC00\uB2A5\uD55C \uC9C0\uC810\uB9CC \uC0AC\uC6A9\uD588\uC2B5\uB2C8\uB2E4(\uC5D4\uC9C4\uACFC \uAC19\uC740 \uAD00\uCE21 \uADDC\uCE59). \uB4F1\uB77D\uC740 \uD655\uBCF4 \uC9C0\uC810\uACFC \uC9C0\uC810 \uC0AC\uC774\uC758 \uBE44\uAD50\uC774\uBA70, \uC0AC\uAC74\uC758 \uC218\uC775\uC774\uB098 \uC815\uD655\uD788 1\xB73\uAC1C\uC6D4 \uB4A4 \uC218\uC775\uC774 \uC544\uB2D9\uB2C8\uB2E4. \uADF8 \uC2DC\uC810\uC5D0 \uC54C \uC218 \uC5C6\uB294 \uACB0\uACFC\uB294 \uBE44\uC6CC \uB461\uB2C8\uB2E4.";
+      foot.textContent = "이 판단일(" + effDate + (postClose ? ", 장 마감 후" : "") + ")에 관측 가능한 지점만 사용했습니다(엔진과 같은 관측 규칙). 등락은 확보 지점과 지점 사이의 비교이며, 사건의 수익이나 정확히 1\xB73개월 뒤 수익이 아닙니다. 그 시점에 알 수 없는 결과는 비워 둡니다.";
       box.appendChild(foot);
       return box;
     };
@@ -401,23 +401,23 @@ export function App() {
       const snap = marketSnapshot(panelPrices, effDate, postClose);
       const market = document.createElement("section");
       market.className = "dp-market";
-      market.setAttribute("aria-label", "\uC2DC\uC7A5 \uCC38\uACE0 \xB7 \uD655\uBCF4 \uC9C0\uC810\uACFC \uBE44\uAD50 \uAE30\uC900");
+      market.setAttribute("aria-label", "시장 참고 \xB7 확보 지점과 비교 기준");
       const heading = document.createElement("p");
       heading.className = "dp-head";
-      heading.textContent = "\uC2DC\uC7A5 \uCC38\uACE0 \xB7 \uD310\uB2E8\uC77C " + effDate;
+      heading.textContent = "시장 참고 \xB7 판단일 " + effDate;
       market.appendChild(heading);
       for (const row of snap) {
         const item = document.createElement("div");
         item.className = "dp-market-row";
         const title = document.createElement("strong");
-        title.textContent = row.label + (row.point ? " " + row.point.value.toLocaleString() : " \xB7 \uC9C0\uC810 \uBBF8\uD655\uBCF4");
+        title.textContent = row.label + (row.point ? " " + row.point.value.toLocaleString() : " \xB7 지점 미확보");
         item.appendChild(title);
         if (row.point) {
           const date = document.createElement("p");
-          date.textContent = "\uAC00\uACA9 \uAE30\uC900\uC77C " + row.point.date + (row.ageDays === 0 ? " \xB7 \uD310\uB2E8\uC77C \uB2F9\uC77C" : " \xB7 \uD310\uB2E8\uC77C\uBCF4\uB2E4 " + row.ageDays + "\uC77C \uC804");
+          date.textContent = "가격 기준일 " + row.point.date + (row.ageDays === 0 ? " \xB7 판단일 당일" : " \xB7 판단일보다 " + row.ageDays + "일 전");
           item.appendChild(date);
           const compare = document.createElement("p");
-          compare.textContent = row.pct === null ? "\uD55C \uB2EC \uC804 \uAD00\uCE21\uC77C\uAE4C\uC9C0\uC758 \uBE44\uAD50 \uAE30\uC900\uC774 \uC5C6\uAC70\uB098 \uAC19\uC740 \uC9C0\uC810\uC785\uB2C8\uB2E4." : "\uD55C \uB2EC \uC804 \uAD00\uCE21\uC77C(" + row.comparisonCutoff + ")\uAE4C\uC9C0 \uD655\uBCF4\uB41C " + row.prevDate + " \uC9C0\uC810 \uB300\uBE44 " + (row.pct >= 0 ? "\u25B2" : "\u25BC") + Math.abs(row.pct) + "% \xB7 \uB450 \uAC00\uACA9 \uAE30\uC900\uC77C \uAC04\uACA9 " + row.spanDays + "\uC77C";
+          compare.textContent = row.pct === null ? "한 달 전 관측일까지의 비교 기준이 없거나 같은 지점입니다." : "한 달 전 관측일(" + row.comparisonCutoff + ")까지 확보된 " + row.prevDate + " 지점 대비 " + (row.pct >= 0 ? "▲" : "▼") + Math.abs(row.pct) + "% \xB7 두 가격 기준일 간격 " + row.spanDays + "일";
           item.appendChild(compare);
         }
         market.appendChild(item);
@@ -426,12 +426,12 @@ export function App() {
       if (stale.length) {
         const warning = document.createElement("p");
         warning.className = "dp-head dp-market-gap";
-        warning.textContent = stale.map((row) => row.label).join(" \xB7 ") + ": \uAC00\uACA9 \uAE30\uC900\uC77C\uC774 \uD310\uB2E8\uC77C\uBCF4\uB2E4 62\uC77C \uB118\uAC8C \uC55E\uC12D\uB2C8\uB2E4. \uC2E4\uC81C \uC2DC\uC7A5 \uC790\uB8CC\uAC00 \uC5C6\uB2E4\uB294 \uB73B\uC774 \uC544\uB2C8\uB77C \uC774 \uAC8C\uC784\uC758 \uD655\uBCF4 \uC790\uB8CC \uACF5\uBC31\uC785\uB2C8\uB2E4. \uD3C9\uAC00\uB294 \uAE30\uC874 \uC9C0\uC810\uC5D0 \uBA38\uBB3C \uC218 \uC788\uACE0, \uAC00\uACA9\uD615 \uC0C8 \uC8FC\uBB38\uC740 \uB2E4\uC74C \uC801\uACA9 \uC9C0\uC810 \uC804\uAE4C\uC9C0 \uBBF8\uCCB4\uACB0\uB85C \uB300\uAE30\uD569\uB2C8\uB2E4. \uB2E4\uC74C \uCCB4\uACB0\uC77C\uC744 \uC608\uACE0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.";
+        warning.textContent = stale.map((row) => row.label).join(" \xB7 ") + ": 가격 기준일이 판단일보다 62일 넘게 앞섭니다. 실제 시장 자료가 없다는 뜻이 아니라 이 게임의 확보 자료 공백입니다. 평가는 기존 지점에 머물 수 있고, 가격형 새 주문은 다음 적격 지점 전까지 미체결로 대기합니다. 다음 체결일을 예고하지 않습니다.";
         market.appendChild(warning);
       }
       const note = document.createElement("p");
       note.className = "dp-foot";
-      note.textContent = "\uC704 \uC22B\uC790\uB294 \uD310\uB2E8 \uCC38\uACE0\uC6A9 \uD655\uBCF4 \uC9C0\uC810\uC785\uB2C8\uB2E4. \uD604\uC7AC \uC2DC\uC138\xB7\uC8FC\uBB38 \uCCB4\uACB0\uAC00\uB97C \uBCF4\uC7A5\uD558\uC9C0 \uC54A\uC73C\uBA70, \uB450 \uC9C0\uC810 \uC0AC\uC774\uC758 \uC2E4\uC81C \uC2DC\uC7A5 \uACBD\uB85C\uB294 \uCC44\uC6B0\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uBE44\uAD50 \uAD00\uCE21\uC77C\uC740 \uB2EC\uB825\uC0C1 \uD55C \uB2EC \uC804(\uB9D0\uC77C \uBCF4\uC815)\uC774\uBA70 \uBE44\uAD50 \uAC00\uACA9\uC758 \uAE30\uC900\uC77C\uACFC \uB2E4\uB97C \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
+      note.textContent = "위 숫자는 판단 참고용 확보 지점입니다. 현재 시세\xB7주문 체결가를 보장하지 않으며, 두 지점 사이의 실제 시장 경로는 채우지 않습니다. 비교 관측일은 달력상 한 달 전(말일 보정)이며 비교 가격의 기준일과 다를 수 있습니다.";
       market.appendChild(note);
       return market;
     };
@@ -441,16 +441,16 @@ export function App() {
       box.open = true;
       box.setAttribute("data-sig", effDate + "|" + (postClose ? "pc" : "quiet"));
       const sum = document.createElement("summary");
-      sum.textContent = "\uD310\uB2E8 \uCC38\uACE0 \u2014 \uC774 \uAD00\uCE21\uC77C\uAE4C\uC9C0 \uD655\uBCF4\uB41C \uC790\uB8CC";
+      sum.textContent = "판단 참고 — 이 관측일까지 확보된 자료";
       box.appendChild(sum);
       box.appendChild(marketEl(effDate, postClose));
       const note = document.createElement("p");
       note.className = "dp-head";
-      note.textContent = isSettlement ? "\uC774 \uD654\uBA74\uC740 \uBD84\uAE30 \uC815\uC0B0 \uC804\uC6A9 \uD134\uC785\uB2C8\uB2E4. \uC0AC\uAC74 \uC0AC\uB840\uB294 \uB274\uC2A4 \uD134\uC758 \uD310\uB2E8 \uCC38\uACE0\uC5D0\uC11C\uB9CC \uD45C\uC2DC\uD558\uBA70, \uC774 \uB2EC\uC5D0 \uB274\uC2A4\uAC00 \uC788\uC5C8\uB294\uC9C0\uC640\uB294 \uBB34\uAD00\uD558\uAC8C \uC5EC\uAE30\uC11C\uB294 \uD45C\uC2DC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." : "\uC774 \uB2EC\uC5D0\uB294 \uC774 \uAC8C\uC784\uC5D0 \uC5F0\uACB0\uB41C \uB274\uC2A4\uAC00 \uC5C6\uC5B4 \uC0AC\uAC74 \uC0AC\uB840\uB294 \uD45C\uC2DC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC2E4\uC81C \uC2DC\uC7A5\uC774 \uC870\uC6A9\uD588\uB2E4\uB294 \uB73B\uC740 \uC544\uB2D9\uB2C8\uB2E4.";
+      note.textContent = isSettlement ? "이 화면은 분기 정산 전용 턴입니다. 사건 사례는 뉴스 턴의 판단 참고에서만 표시하며, 이 달에 뉴스가 있었는지와는 무관하게 여기서는 표시하지 않습니다." : "이 달에는 이 게임에 연결된 뉴스가 없어 사건 사례는 표시하지 않습니다. 실제 시장이 조용했다는 뜻은 아닙니다.";
       box.appendChild(note);
       const foot = document.createElement("p");
       foot.className = "dp-foot";
-      foot.textContent = "\uC774 \uAD00\uCE21\uC77C(" + effDate + (postClose ? ", \uC7A5 \uB9C8\uAC10 \uD6C4" : "") + ")\uC5D0 \uD655\uBCF4\uB41C \uC9C0\uC810\uB9CC \uC0AC\uC6A9\uD588\uC2B5\uB2C8\uB2E4(\uC5D4\uC9C4\uACFC \uAC19\uC740 \uAD00\uCE21 \uADDC\uCE59). \uB4F1\uB77D\uC740 \uD655\uBCF4 \uC9C0\uC810\uACFC \uC9C0\uC810 \uC0AC\uC774\uC758 \uBE44\uAD50\uC774\uBA70 \uC218\uC775 \uC608\uACE0\uAC00 \uC544\uB2D9\uB2C8\uB2E4.";
+      foot.textContent = "이 관측일(" + effDate + (postClose ? ", 장 마감 후" : "") + ")에 확보된 지점만 사용했습니다(엔진과 같은 관측 규칙). 등락은 확보 지점과 지점 사이의 비교이며 수익 예고가 아닙니다.";
       box.appendChild(foot);
       return box;
     };
@@ -489,7 +489,7 @@ export function App() {
         card.appendChild(buildQuietPanel(effDate, false));
         return;
       }
-      if (dateEl && dtxt0.includes(" \xB7 \uBD84\uAE30 \uC815\uC0B0 \uC804\uC6A9 \uD134")) {
+      if (dateEl && dtxt0.includes(" \xB7 분기 정산 전용 턴")) {
         const qm = dtxt0.match(/^(\d{4}-\d{2})/);
         if (!qm) {
           if (existing) existing.remove();
@@ -504,7 +504,7 @@ export function App() {
         return;
       }
       let cur = null;
-      if (dateEl && h2 && dtxt0.includes("\xB7 \uB274\uC2A4")) {
+      if (dateEl && h2 && dtxt0.includes("\xB7 뉴스")) {
         const dtxt = (dateEl.textContent || "").trim();
         const dm = dtxt.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/);
         const ev = panelEvents.find((e) => e.card_title === (h2.textContent || "").trim());
@@ -512,7 +512,7 @@ export function App() {
           const effDate = dm[3] ? dm[0] : dm[0] + "-01";
           const evDay = ev.date.length === 10 ? ev.date : ev.date + "-01";
           if (effDate === evDay) {
-            const postClose = dtxt.includes("\uC7A5 \uB9C8\uAC10 \uD6C4");
+            const postClose = dtxt.includes("장 마감 후");
             cur = { effDate, postClose, ev, sig: effDate + "|" + ev.id };
           }
         }
@@ -554,7 +554,7 @@ export function App() {
         return true;
       }
       const text = String(msg ?? "");
-      const kind = text.includes("\uC0C8 \uD68C\uADC0\uB97C \uC2DC\uC791\uD560\uAE4C\uC694") ? "restart" : text.includes("\uB2E4\uC2DC \uBD88\uB7EC\uC62C\uAE4C\uC694") ? "reload" : "generic";
+      const kind = text.includes("새 회귀를 시작할까요") ? "restart" : text.includes("다시 불러올까요") ? "reload" : "generic";
       setConfirmAsk({ msg: text, kind });
       return false;
     };
@@ -564,7 +564,7 @@ export function App() {
     import("./game-bundle.js").then(() => {
     }).catch((err) => {
       const card = document.getElementById("turn-card");
-      if (card) card.innerHTML = '<div class="date">\uC2E4\uD589 \uC900\uBE44 \uC2E4\uD328</div><h2>\uAC8C\uC784\uC744 \uC2DC\uC791\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694</h2><p>\uD398\uC774\uC9C0\uB97C \uB2E4\uC2DC \uBD88\uB7EC \uD655\uC778\uD574 \uC8FC\uC138\uC694.</p><p class="muted" id="boot-error"></p>';
+      if (card) card.innerHTML = '<div class="date">실행 준비 실패</div><h2>게임을 시작하지 못했어요</h2><p>페이지를 다시 불러 확인해 주세요.</p><p class="muted" id="boot-error"></p>';
       const slot = document.getElementById("boot-error");
       if (slot) slot.textContent = String(err && (err.message || err));
     });
@@ -573,7 +573,7 @@ export function App() {
     if (started.current || !allReady) return;
     started.current = true;
     if (storageView.kind === "unknown") {
-      setBootFailure("\uBE0C\uB77C\uC6B0\uC800 \uC800\uC7A5\uC744 \uC77D\uC9C0 \uBABB\uD574 \uC9C4\uD589\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4. \uAE30\uC874 \uAE30\uB85D\uC744 \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC800\uC7A5 \uAD8C\uD55C\uACFC \uC2DC\uD06C\uB9BF \uBAA8\uB4DC \uC5EC\uBD80\uB97C \uD655\uC778\uD574 \uC8FC\uC138\uC694.");
+      setBootFailure("브라우저 저장을 읽지 못해 진행하지 않았습니다. 기존 기록을 덮어쓰지 않습니다. 저장 권한과 시크릿 모드 여부를 확인해 주세요.");
       return;
     }
     installGameDataFetch();
@@ -632,21 +632,21 @@ export function App() {
     void (async () => {
       const boot = await ss.loadBoot();
       if (boot.kind === "corrupt") {
-        setBootFailure("\uB450 \uC138\uB300\uC758 \uC800\uC7A5 \uC870\uAC01\uC744 \uBAA8\uB450 \uC77D\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uC77D\uC9C0 \uBABB\uD55C \uC6D0\uBB38\uC744 \uC9C0\uC6B0\uAC70\uB098 \uC0C8 \uAC8C\uC784\uC73C\uB85C \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4. \uC774 \uD398\uC774\uC9C0\uC758 \uC0AC\uC774\uD2B8 \uB370\uC774\uD130\uB97C \uC9C0\uC6B0\uC9C0 \uB9C8\uC138\uC694. \uC544\uB798 \uBC84\uD2BC\uC73C\uB85C \uC190\uC0C1\uB41C \uC800\uC7A5\uC744 \uC815\uB9AC\uD558\uACE0 \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.");
+        setBootFailure("두 세대의 저장 조각을 모두 읽지 못했습니다. 읽지 못한 원문을 지우거나 새 게임으로 덮어쓰지 않았습니다. 이 페이지의 사이트 데이터를 지우지 마세요. 아래 버튼으로 손상된 저장을 정리하고 새로 시작할 수 있습니다.");
         return;
       }
       if (boot.kind === "v2" && boot.recovered) {
-        setRecoveryNotice("\uAC00\uC7A5 \uCD5C\uADFC \uC800\uC7A5 \uC77C\uBD80\uAC00 \uC190\uC0C1\uB418\uC5B4 \uC774\uC804 \uC800\uC7A5\uC73C\uB85C \uBCF5\uAD6C\uD588\uC5B4\uC694. \uC190\uC0C1\uB41C \uC870\uAC01\uC740 \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+        setRecoveryNotice("가장 최근 저장 일부가 손상되어 이전 저장으로 복구했어요. 손상된 조각은 덮어쓰지 않았습니다.");
       }
       if (boot.kind === "legacy") {
-        setRecoveryNotice("\uC774\uC804 \uC2E4\uD589\uBCF8\uC758 \uC800\uC7A5\uC744 \uC774 \uC2E4\uD589 \uBC29\uC2DD\uC73C\uB85C \uC774\uC5B4 \uBC1B\uC558\uC5B4\uC694. \uCCAB \uC800\uC7A5\uC774 \uC644\uB8CC\uB41C \uB4A4\uC5D0 \uC774\uC804 \uD615\uC2DD \uD0A4\uB97C \uC815\uB9AC\uD569\uB2C8\uB2E4.");
+        setRecoveryNotice("이전 실행본의 저장을 이 실행 방식으로 이어 받았어요. 첫 저장이 완료된 뒤에 이전 형식 키를 정리합니다.");
       }
       try {
         const loaded = await readRetention(archiveInputs(values));
         let archiveJson = loaded.raw;
         if (archiveJson !== null && retainLatest(archiveJson) !== archiveJson) {
           archiveJson = await persistRetained(storeRef.current.livesState, ss, archiveJson);
-          setRecoveryNotice("\uBCF4\uAD00 \uAE30\uC900\uC5D0 \uB530\uB77C \uCD5C\uADFC \uC644\uB8CC \uD68C\uADC0 1\uAC74\uC740 \uC0C1\uC138 \uC720\uC9C0\uD558\uACE0, \uC774\uC804 \uD68C\uADC0\uC758 \uC6D4\uBCC4 \uC790\uC0B0\uC740 \uC694\uC57D\uD588\uC2B5\uB2C8\uB2E4. \uC8FC\uC694 \uC120\uD0DD\xB7\uCD5C\uC885 \uC790\uC0B0\xB7\uBE44\uAD50 \uADFC\uAC70\uB294 \uC720\uC9C0\uD569\uB2C8\uB2E4. \uC5C6\uC564 \uC6D4\uBCC4 \uADF8\uB798\uD504\uB294 \uBCF5\uC6D0\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+          setRecoveryNotice("보관 기준에 따라 최근 완료 회귀 1건은 상세 유지하고, 이전 회귀의 월별 자산은 요약했습니다. 주요 선택\xB7최종 자산\xB7비교 근거는 유지합니다. 없앤 월별 그래프는 복원할 수 없습니다.");
         }
         if (loaded.packed !== null && retainLatest(loaded.raw) === loaded.raw) {
           const bridge = browserPersistence;
@@ -661,7 +661,7 @@ export function App() {
         startEngine(boot.kind === "empty" ? null : boot.saveJson, archiveJson);
       } catch (_) {
         setArchiveBlocked(true);
-        setBootFailure("\uD68C\uADC0 \uAE30\uB85D\uC758 \uC77D\uAE30\xB7\uC694\uC57D \uC804\uD658 \uB610\uB294 \uC548\uC804\uD55C \uC800\uC7A5 \uACF5\uAC04\uC744 \uD655\uC778\uD560 \uC218 \uC5C6\uC5B4 \uBA48\uCDC4\uC2B5\uB2C8\uB2E4. \uD65C\uC131 \uC800\uC7A5\uC740 \uC9C0\uC6B0\uC9C0 \uC54A\uACE0 \uC911\uB2E8\uD588\uC2B5\uB2C8\uB2E4. \uC0C8 \uBCF4\uAD00\uBCF8\uC774 \uC774\uBBF8 \uD655\uC815\uB41C \uACBD\uC6B0 \uC774\uC804 \uC0C1\uC138 \uC911\uBCF5\uBCF8 \uC77C\uBD80\uB294 \uC815\uB9AC\uB410\uC744 \uC218 \uC788\uC73C\uBA70, \uC7AC\uB85C\uB529 \uB54C \uAC80\uC99D\uB41C \uBCF4\uAD00\uBCF8\uC744 \uB2E4\uC2DC \uD655\uC778\uD569\uB2C8\uB2E4. \uC774 \uD398\uC774\uC9C0\uC758 \uC0AC\uC774\uD2B8 \uB370\uC774\uD130\uB97C \uC9C0\uC6B0\uC9C0 \uB9C8\uC138\uC694.");
+        setBootFailure("회귀 기록의 읽기\xB7요약 전환 또는 안전한 저장 공간을 확인할 수 없어 멈췄습니다. 활성 저장은 지우지 않고 중단했습니다. 새 보관본이 이미 확정된 경우 이전 상세 중복본 일부는 정리됐을 수 있으며, 재로딩 때 검증된 보관본을 다시 확인합니다. 이 페이지의 사이트 데이터를 지우지 마세요.");
       }
     })();
   }, [allReady]);
@@ -673,7 +673,7 @@ export function App() {
     setBootFailure(null);
     startEngine(null);
   };
-  const confirmLabel = confirmAsk?.kind === "restart" ? "\uBCF4\uC874\uBCF8\uC744 \uB0A8\uAE30\uACE0 \uC0C8 \uD68C\uADC0 \uC2DC\uC791" : confirmAsk?.kind === "reload" ? "\uB2E4\uC2DC \uBD88\uB7EC\uC624\uAE30" : "\uD655\uC778";
+  const confirmLabel = confirmAsk?.kind === "restart" ? "보존본을 남기고 새 회귀 시작" : confirmAsk?.kind === "reload" ? "다시 불러오기" : "확인";
   const onConfirmAccept = () => {
     const ask = confirmAsk;
     setConfirmAsk(null);
@@ -688,9 +688,9 @@ export function App() {
   const prepareRecordCopy = async () => {
     setCopyBusy(true);
     setRecordCopy(null);
-    setCopyMessage("\uD604\uC7AC \uAE30\uB85D\uC744 \uC77D\uAE30 \uB300\uC870\uD558\uACE0 \uC788\uC5B4\uC694.");
+    setCopyMessage("현재 기록을 읽기 대조하고 있어요.");
     try {
-      if (!started.current || bootFailure || storageFailure || archiveBlocked) throw Error("\uC815\uC0C1 \uAE30\uB85D \uC77D\uAE30\uB97C \uD655\uC778\uD560 \uC218 \uC5C6\uC5B4 \uC0AC\uBCF8\uC744 \uB9CC\uB4E4\uC9C0 \uC54A\uC558\uC5B4\uC694.");
+      if (!started.current || bootFailure || storageFailure || archiveBlocked) throw Error("정상 기록 읽기를 확인할 수 없어 사본을 만들지 않았어요.");
       const w = window;
       const result = await captureRecordCopy({
         read: (key) => browserPersistence.request("local.read", { key }),
@@ -698,7 +698,7 @@ export function App() {
         current: () => ({ active: localStorage.getItem(SAVE_KEY), archive: localStorage.getItem(LIVES_KEY) })
       });
       setRecordCopy(result);
-      setCopyMessage("\uC0AC\uBCF8 \uC900\uBE44 \uC644\uB8CC \xB7 " + (result.scope === "preview-memory-only" ? "\uD504\uB9AC\uBDF0 \uBA54\uBAA8\uB9AC \uAE30\uB85D\uB9CC \uD3EC\uD568\uD569\uB2C8\uB2E4. \uC601\uC18D \uC800\uC7A5 \uD655\uC778\uC774 \uC544\uB2D9\uB2C8\uB2E4." : "\uC774 \uBE0C\uB77C\uC6B0\uC800\uC758 \uC800\uC7A5 \uC77D\uAE30\uB97C \uB300\uC870\uD588\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uAE30\uAE30 \uBCF4\uC874 \uD655\uC778\uC774 \uC544\uB2D9\uB2C8\uB2E4."));
+      setCopyMessage("사본 준비 완료 \xB7 " + (result.scope === "preview-memory-only" ? "프리뷰 메모리 기록만 포함합니다. 영속 저장 확인이 아닙니다." : "이 브라우저의 저장 읽기를 대조했습니다. 다른 기기 보존 확인이 아닙니다."));
     } catch (e) {
       setCopyMessage(String(e.message || e));
     } finally {
@@ -713,9 +713,9 @@ export function App() {
     a.download = "return-record-copy.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
-    setCopyMessage("\uD30C\uC77C \uC800\uC7A5\uC744 \uC694\uCCAD\uD588\uC2B5\uB2C8\uB2E4. \uAE30\uAE30\uC5D0 \uD30C\uC77C\uC774 \uC0DD\uACBC\uB294\uC9C0 \uC9C1\uC811 \uD655\uC778\uD574 \uC8FC\uC138\uC694. \uCC28\uB2E8\uB418\uBA74 \uC544\uB798 \uC0AC\uBCF8 \uC6D0\uBB38\uC744 \uC120\uD0DD\uD574 \uB530\uB85C \uBCF4\uAD00\uD560 \uC218 \uC788\uC5B4\uC694.");
+    setCopyMessage("파일 저장을 요청했습니다. 기기에 파일이 생겼는지 직접 확인해 주세요. 차단되면 아래 사본 원문을 선택해 따로 보관할 수 있어요.");
   };
-  return /* @__PURE__ */ React.createElement("main", null, /* @__PURE__ */ React.createElement("style", null, vnBgCss(vnUrls)), /* @__PURE__ */ React.createElement("header", null, /* @__PURE__ */ React.createElement("h1", { id: "game-title" }, "\uB9AC\uD134: \uD68C\uADC0 \uD22C\uC790\uC790"), /* @__PURE__ */ React.createElement("p", null, "\uC2DC\uC81C\uD488 \xB7 \uC2E4\uD589 \uAD6C\uAC04 1996-03~2026-10 \xB7 \uB274\uC2A4 \uB370\uC774\uD130\uB294 1996~2026 \uBD80\uBD84 \uD655\uBCF4(\uC5F0\uB3C4\uBCC4 \uACF5\uBC31 \uBCF4\uCDA9 \uC911) \xB7 \uC2DC\uC138\uB294 \uAC80\uC99D\uB41C \uC9C0\uC810\uB9CC \xB7 \uC2DC\uC5F0\uC6A9 \uC124\uC815(\uC2DC\uB4DC 100\uB9CC\uC6D0, \uCD5C\uC885 \uC124\uC815 \uC544\uB2D8)"), React.createElement("details", {className:"intro-details",id:"intro-details"}, React.createElement("summary", {style:{minHeight:44,padding:"10px 0",boxSizing:"border-box"}}, "자료·실행 범위 자세히"), /* @__PURE__ */ React.createElement("p", { id: "deployment-scope-note" }, "\uACF5\uAC1C \uAC1C\uBC1C\uD310 \xB7 \uBCF4\uC870 \uAC04\uACA9\uC740 \uCCB4\uACB0 \uC801\uACA9 \uC9C0\uC810\uB9CC \uACC4\uC0B0\uD574\uC694. \uD655\uC778 \uC548 \uB41C \uC5F0\uAD6C\uD58951\uAC1C\uB294 \uC774 \uC0AC\uBCF8\uC5D0\uC11C \uC81C\uC678\uD558\uBA70, \uC6D0\uC790\uB8CC\xB7\uAE30\uC874 \uC804\uB2EC ZIP\uC740 \uB530\uB85C \uBCF4\uC874\uD574\uC694. \uAE08\uB9AC366\uAC1C\uB294 \uD55C\uAD6D\uC740\uD589 ECOS\uC640 \uC218\uCE58 \uB300\uC870\uB97C \uB9C8\uCCE4\uACE0, \uACFC\uAC70 \uCD5C\uCD08 \uACF5\uD45C\uC77C\uACFC \uC2E4\uC81C \uACC4\uC57D\uAE08\uB9AC\uB294 \uBBF8\uD655\uC778\uC785\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("p", { className: "muted" }, "GitHub Pages \uC2E4\uD589\uBCF8\uC785\uB2C8\uB2E4. \uC800\uC7A5\uC740 \uC774 \uBE0C\uB77C\uC6B0\uC800\xB7\uC8FC\uC18C\uC5D0\uB9CC \uB0A8\uC2B5\uB2C8\uB2E4. \uC774\uC804 \uD14C\uC2A4\uD2B8 \uC8FC\uC18C\uC758 \uC800\uC7A5\uC740 \uC790\uB3D9\uC73C\uB85C \uC62E\uACA8\uC9C0\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC800\uC7A5 \uBC94\uC704\uB294 \uC544\uB798 \uD604\uC7AC \uC751\uB2F5 \uD45C\uC2DC\uB97C \uD655\uC778\uD574 \uC8FC\uC138\uC694. \uBE0C\uB77C\uC6B0\uC800 \uC800\uC7A5\uC744 \uC9C0\uC6D0\uD558\uB294 \uC5F4\uB78C\uC5D0\uC11C\uB3C4 \uC774 \uAE30\uAE30\xB7\uACC4\uC815\xB7\uD398\uC774\uC9C0 \uBC94\uC704\uC774\uBA70, \uB2E4\uB978 \uC0AC\uBCF8\uC774\uB098 \uC774\uC804 \uC2E4\uD589 \uC8FC\uC18C\uC758 \uC800\uC7A5\uC740 \uC790\uB3D9\uC73C\uB85C \uC774\uC5B4\uC9C0\uC9C0 \uC54A\uC544\uC694. \uC774 \uC2E4\uD589\uBCF8\uC740 \uBCF8\uD3B8(\uD68C\uADC0 \uD559\uAD50\xB7\uB2EC\uB825) \uBAA8\uB4DC\uB9CC \uC2E4\uD589\uD558\uBA70, \uD074\uB798\uC2DD\xB7\uC2E4\uD5D8 \uBAA8\uB4DC\uB294 \uC774 \uC0AC\uBCF8\uC5D0\uC11C \uC9C0\uC6D0\uD558\uC9C0 \uC54A\uC544\uC694."))), /* @__PURE__ */ React.createElement("section", { id: "storage-scope-status", className: "storage-scope-status storage-scope-" + storageView.kind, role: "status", "aria-live": "polite", "aria-atomic": "true" }, /* @__PURE__ */ React.createElement("strong", null, storageView.title), /* @__PURE__ */ React.createElement("p", null, storageView.detail)), bootFailure && /* @__PURE__ */ React.createElement("section", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "date" }, "\uC800\uC7A5 \uC77D\uAE30 \uC911\uB2E8"), /* @__PURE__ */ React.createElement("h2", null, "\uC800\uC7A5\uC744 \uD655\uC778\uD558\uC9C0 \uBABB\uD574 \uC2DC\uC791\uD558\uC9C0 \uC54A\uC558\uC5B4\uC694"), /* @__PURE__ */ React.createElement("p", null, bootFailure), !archiveBlocked && /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onBootReset }, "\uC190\uC0C1\uB41C \uC800\uC7A5\uC744 \uC9C0\uC6B0\uACE0 \uC0C8\uB85C \uC2DC\uC791(\uB418\uC0B4\uB9B4 \uC218 \uC5C6\uC74C)")), recoveryNotice && /* @__PURE__ */ React.createElement("section", { className: "card", role: "status" }, /* @__PURE__ */ React.createElement("div", { className: "date" }, "\uC800\uC7A5 \uBCF5\uAD6C \uC548\uB0B4"), /* @__PURE__ */ React.createElement("p", null, recoveryNotice), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setRecoveryNotice(null) }, "\uD655\uC778")), storageFailure && /* @__PURE__ */ React.createElement("section", { className: "card storage-failure", role: "alert" }, /* @__PURE__ */ React.createElement("div", { className: "date" }, "\uC800\uC7A5 \uC2E4\uD328"), /* @__PURE__ */ React.createElement("h2", null, storageFailure.kind === "save" ? "\uC774\uBC88 \uC9C4\uD589\uC744 \uC800\uC7A5\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694" : "\uD68C\uADC0 \uAE30\uB85D\uC744 \uC800\uC7A5\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694"), /* @__PURE__ */ React.createElement("p", null, storageFailure.reason, " \uB9C8\uC9C0\uB9C9 \uC644\uC804 \uC800\uC7A5\uC758 \uBCF4\uC874 \uC5EC\uBD80\uB294 \uC7AC\uC5F4\uAE30 \uC804\uAE4C\uC9C0 \uD655\uC815\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC2E4\uD328 \uB4A4 \uCD94\uAC00 \uC9C4\uD589\uC740 \uC911\uB2E8\uD558\uBA70, \uC774 \uD654\uBA74\uC744 \uB2EB\uC73C\uBA74 \uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uC9C4\uD589\uC740 \uC0AC\uB77C\uC9D1\uB2C8\uB2E4. \uC544\uB798 \uC6D0\uBB38\uC744 \uBCF5\uC0AC\uD574 \uB530\uB85C \uBCF4\uAD00\uD560 \uC218 \uC788\uC5B4\uC694."), /* @__PURE__ */ React.createElement("details", null, /* @__PURE__ */ React.createElement("summary", null, "\uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uC6D0\uBB38 \uBCF4\uAE30"), /* @__PURE__ */ React.createElement("textarea", { readOnly: true, rows: 6, value: storageFailure.json, onFocus: (e) => e.target.select() })), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: (e) => {
+  return /* @__PURE__ */ React.createElement("main", null, React.createElement("p", {className:"muted"}, React.createElement("a", {href:"import.html"}, "저장 사본 가져오기 · 원래 공간 선택")), /* @__PURE__ */ React.createElement("style", null, vnBgCss(vnUrls)), /* @__PURE__ */ React.createElement("header", null, /* @__PURE__ */ React.createElement("h1", { id: "game-title" }, "리턴: 회귀 투자자"), /* @__PURE__ */ React.createElement("p", null, "시제품 \xB7 실행 구간 1996-03~2026-10 \xB7 뉴스 데이터는 1996~2026 부분 확보(연도별 공백 보충 중) \xB7 시세는 검증된 지점만 \xB7 시연용 설정(시드 100만원, 최종 설정 아님)"), React.createElement("details", {className:"intro-details",id:"intro-details"}, React.createElement("summary", {style:{minHeight:44,padding:"10px 0",boxSizing:"border-box"}}, "자료·실행 범위 자세히"), /* @__PURE__ */ React.createElement("p", { id: "deployment-scope-note" }, "공개 개발판 \xB7 보조 간격은 체결 적격 지점만 계산해요. 확인 안 된 연구행51개는 이 사본에서 제외하며, 원자료\xB7기존 전달 ZIP은 따로 보존해요. 금리366개는 한국은행 ECOS와 수치 대조를 마쳤고, 과거 최초 공표일과 실제 계약금리는 미확인입니다."), /* @__PURE__ */ React.createElement("p", { className: "muted" }, "GitHub Pages 실행본입니다. 저장은 이 브라우저\xB7주소에만 남습니다. 이전 테스트 주소의 저장은 자동으로 옮겨지지 않습니다. 저장 범위는 아래 현재 응답 표시를 확인해 주세요. 브라우저 저장을 지원하는 열람에서도 이 기기\xB7계정\xB7페이지 범위이며, 다른 사본이나 이전 실행 주소의 저장은 자동으로 이어지지 않아요. 이 실행본은 본편(회귀 학교\xB7달력) 모드만 실행하며, 클래식\xB7실험 모드는 이 사본에서 지원하지 않아요."))), /* @__PURE__ */ React.createElement("section", { id: "storage-scope-status", className: "storage-scope-status storage-scope-" + storageView.kind, role: "status", "aria-live": "polite", "aria-atomic": "true" }, /* @__PURE__ */ React.createElement("strong", null, storageView.title), /* @__PURE__ */ React.createElement("p", null, storageView.detail)), bootFailure && /* @__PURE__ */ React.createElement("section", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "date" }, "저장 읽기 중단"), /* @__PURE__ */ React.createElement("h2", null, "저장을 확인하지 못해 시작하지 않았어요"), /* @__PURE__ */ React.createElement("p", null, bootFailure), !archiveBlocked && /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onBootReset }, "손상된 저장을 지우고 새로 시작(되살릴 수 없음)")), recoveryNotice && /* @__PURE__ */ React.createElement("section", { className: "card", role: "status" }, /* @__PURE__ */ React.createElement("div", { className: "date" }, "저장 복구 안내"), /* @__PURE__ */ React.createElement("p", null, recoveryNotice), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setRecoveryNotice(null) }, "확인")), storageFailure && /* @__PURE__ */ React.createElement("section", { className: "card storage-failure", role: "alert" }, /* @__PURE__ */ React.createElement("div", { className: "date" }, "저장 실패"), /* @__PURE__ */ React.createElement("h2", null, storageFailure.kind === "save" ? "이번 진행을 저장하지 못했어요" : "회귀 기록을 저장하지 못했어요"), /* @__PURE__ */ React.createElement("p", null, storageFailure.reason, " 마지막 완전 저장의 보존 여부는 재열기 전까지 확정하지 않습니다. 실패 뒤 추가 진행은 중단하며, 이 화면을 닫으면 저장되지 않은 진행은 사라집니다. 아래 원문을 복사해 따로 보관할 수 있어요."), /* @__PURE__ */ React.createElement("details", null, /* @__PURE__ */ React.createElement("summary", null, "저장되지 않은 원문 보기"), /* @__PURE__ */ React.createElement("textarea", { readOnly: true, rows: 6, value: storageFailure.json, onFocus: (e) => e.target.select() })), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: (e) => {
     const ta = e.target.closest(".storage-failure")?.querySelector("textarea");
     if (ta) {
       ta.focus();
@@ -723,5 +723,5 @@ export function App() {
     }
     if (navigator.clipboard && storageFailure.json) void navigator.clipboard.writeText(storageFailure.json).catch(() => {
     });
-  } }, "\uC6D0\uBB38 \uBCF5\uC0AC"), /* @__PURE__ */ React.createElement("p", null, "\uC6D0\uBB38\uC744 \uB530\uB85C \uBCF4\uAD00\uD55C \uB4A4 \uD398\uC774\uC9C0\uB97C \uB2E4\uC2DC \uC5F4\uC5B4 \uB9C8\uC9C0\uB9C9 \uC644\uC804 \uC800\uC7A5\uC744 \uD655\uC778\uD574 \uC8FC\uC138\uC694. \uC774 \uC2E4\uD589\uBCF8\uC5D0\uB294 \uC0AC\uBCF8 \uAC00\uC838\uC624\uAE30 \uAE30\uB2A5\uC774 \uC5C6\uC5B4\uC694.")), /* @__PURE__ */ React.createElement("div", { className: "vn-stage", id: "vn-stage", "data-scene": "news" }, /* @__PURE__ */ React.createElement("div", { className: "vn-bg" }), /* @__PURE__ */ React.createElement("img", { className: "vn-prop", id: "vn-prop", alt: "", hidden: true }), /* @__PURE__ */ React.createElement("div", { className: "vn-char" }, /* @__PURE__ */ React.createElement("img", { src: "char-student-common.png", alt: "\uD5C8\uAD6C\uC758 \uD559\uC0DD \uC8FC\uC778\uACF5" })), /* @__PURE__ */ React.createElement("div", { className: "vn-scene-label", id: "vn-scene-label" })), React.createElement("details", {className:"muted art-details",id:"art-details"}, React.createElement("summary", {style:{minHeight:44,padding:"10px 0",boxSizing:"border-box"}}, "허구 미술 · 시대 고증 아님 · 설명 보기"), /* @__PURE__ */ React.createElement("p", { className: "muted", id: "vn-art-note" })), /* @__PURE__ */ React.createElement("div", { id: "unlock-area" }), /* @__PURE__ */ React.createElement("section", { id: "turn-card", className: "card" }), /* @__PURE__ */ React.createElement("section", { className: "choices", id: "choices" }), /* @__PURE__ */ React.createElement("section", { id: "portfolio", className: "card" }), /* @__PURE__ */ React.createElement("p", { className: "muted", id: "footnote" }), /* @__PURE__ */ React.createElement("details", { className: "card record-copy", id: "record-copy" }, /* @__PURE__ */ React.createElement("summary", null, "\uD604\uC7AC \uC9C4\uD589\xB7\uC644\uB8CC \uD68C\uADC0 \uC0AC\uBCF8 \uBCF4\uAD00"), /* @__PURE__ */ React.createElement("p", null, "\uD604\uC7AC \uC774 \uD398\uC774\uC9C0\uC758 \uC9C4\uD589\uACFC \uBCF4\uAD00\uB41C \uC644\uB8CC \uD68C\uADC0\uB97C JSON \uC6D0\uBB38\uC73C\uB85C \uC900\uBE44\uD569\uB2C8\uB2E4. \uAC8C\uC784 \uC9C4\uD589\xB7\uC790\uC0B0\xB7\uC8FC\uBB38\xB7\uBCF4\uAD00\uAE30\uB85D\uC744 \uBC14\uAFB8\uC9C0 \uC54A\uACE0, \uB2E4\uB978 \uACF3\uC5D0 \uBCF4\uB0B4\uC9C0 \uC54A\uC544\uC694."), /* @__PURE__ */ React.createElement("p", null, "\uC790\uB3D9 \uB3D9\uAE30\uD654\uB098 \uBCF5\uAD6C \uAE30\uB2A5\uC740 \uC544\uB2D9\uB2C8\uB2E4. \uC774 \uC2E4\uD589\uBCF8\uC5D0\uB294 \uAC00\uC838\uC624\uAE30\uAC00 \uC5C6\uC5B4\uC694. \uC774\uC804 \uD68C\uADC0\uC5D0\uC11C \uC774\uBBF8 \uC694\uC57D\uD55C \uC6D4\uBCC4 \uC0C1\uC138\uB294 \uC0AC\uBCF8\uC73C\uB85C\uB3C4 \uB418\uC0B4\uB9B4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uD30C\uC77C\uC5D0\uB294 \uAC8C\uC784 \uC120\uD0DD\xB7\uC790\uC0B0 \uAE30\uB85D\uC774 \uB4E4\uC5B4\uAC00\uBBC0\uB85C \uACF5\uC720\uC5D0 \uC8FC\uC758\uD574 \uC8FC\uC138\uC694."), /* @__PURE__ */ React.createElement("button", { type: "button", id: "record-copy-prepare", disabled: !allReady || copyBusy || !!bootFailure || !!storageFailure, onClick: () => void prepareRecordCopy() }, copyBusy ? "\uAE30\uB85D \uD655\uC778 \uC911" : "\uC77D\uAE30 \uB300\uC870 \uD6C4 \uC0AC\uBCF8 \uC900\uBE44"), /* @__PURE__ */ React.createElement("p", { role: "status", id: "record-copy-status" }, copyMessage), recordCopy && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", null, recordCopy.scope === "preview-memory-only" ? "\uD504\uB9AC\uBDF0 \uBA54\uBAA8\uB9AC \uC0AC\uBCF8 \xB7 \uC601\uC18D \uC800\uC7A5 \uD655\uC778\uC774 \uC544\uB2D9\uB2C8\uB2E4." : "\uC774 \uBE0C\uB77C\uC6B0\uC800 \uC800\uC7A5 \uC77D\uAE30 \uB300\uC870 \uC0AC\uBCF8 \xB7 \uB2E4\uB978 \uAE30\uAE30 \uBCF4\uC874 \uD655\uC778\uC774 \uC544\uB2D9\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("p", null, "\uC900\uBE44 \uC2DC\uC810: ", new Date(JSON.parse(recordCopy.json).createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }), " (KST) \xB7 \uC9C4\uD589\uC6D4 ", recordCopy.summary.currentMonth || "\uC5C6\uC74C", " \xB7 \uC644\uB8CC \uD68C\uADC0 ", recordCopy.summary.completedLives, "\uAC74"), /* @__PURE__ */ React.createElement("p", null, "\uC544\uB798 \uC0AC\uBCF8\uC740 \uC900\uBE44\uD55C \uC2DC\uC810\uC5D0 \uACE0\uC815\uB429\uB2C8\uB2E4. \uC774\uD6C4 \uC9C4\uD589\uC744 \uB2F4\uC73C\uB824\uBA74 \uB2E4\uC2DC \uC900\uBE44\uD574 \uC8FC\uC138\uC694."), /* @__PURE__ */ React.createElement("button", { type: "button", id: "record-copy-download", onClick: downloadRecordCopy }, "\uC900\uBE44\uD55C JSON \uD30C\uC77C \uBC1B\uAE30"), /* @__PURE__ */ React.createElement("details", null, /* @__PURE__ */ React.createElement("summary", null, "\uC900\uBE44\uD55C \uC0AC\uBCF8 \uC6D0\uBB38 \uBCF4\uAE30"), /* @__PURE__ */ React.createElement("textarea", { id: "record-copy-raw", "aria-label": "\uC900\uBE44\uD55C \uAC8C\uC784 \uAE30\uB85D \uC0AC\uBCF8 \uC6D0\uBB38", readOnly: true, rows: 8, value: recordCopy.json, onFocus: (e) => e.target.select() })))), /* @__PURE__ */ React.createElement("details", { className: "muted asset-license" }, /* @__PURE__ */ React.createElement("summary", null, "\uC0DD\uC131 \uBC30\uACBD\xB7\uC778\uBB3C \uC774\uBBF8\uC9C0 \uB77C\uC774\uC120\uC2A4"), /* @__PURE__ */ React.createElement("pre", null, assetLicenseRaw)), confirmAsk && /* @__PURE__ */ React.createElement("div", { className: "confirm-overlay", role: "dialog", "aria-modal": "true" }, /* @__PURE__ */ React.createElement("div", { className: "confirm-card" }, /* @__PURE__ */ React.createElement("p", null, confirmAsk.msg), /* @__PURE__ */ React.createElement("button", { type: "button", className: "confirm-accept", onClick: onConfirmAccept }, confirmLabel), /* @__PURE__ */ React.createElement("button", { type: "button", className: "confirm-cancel", onClick: () => setConfirmAsk(null) }, "\uCDE8\uC18C"))));
+  } }, "원문 복사"), /* @__PURE__ */ React.createElement("p", null, "원문을 따로 보관한 뒤 페이지를 다시 열어 마지막 완전 저장을 확인해 주세요. 사본은 가져오기 화면에서 호환 검사를 따로 거쳐야 합니다. 자동 복구나 동기화가 아닙니다.")), /* @__PURE__ */ React.createElement("div", { className: "vn-stage", id: "vn-stage", "data-scene": "news" }, /* @__PURE__ */ React.createElement("div", { className: "vn-bg" }), /* @__PURE__ */ React.createElement("img", { className: "vn-prop", id: "vn-prop", alt: "", hidden: true }), /* @__PURE__ */ React.createElement("div", { className: "vn-char" }, /* @__PURE__ */ React.createElement("img", { src: "char-student-common.png", alt: "허구의 학생 주인공" })), /* @__PURE__ */ React.createElement("div", { className: "vn-scene-label", id: "vn-scene-label" })), React.createElement("details", {className:"muted art-details",id:"art-details"}, React.createElement("summary", {style:{minHeight:44,padding:"10px 0",boxSizing:"border-box"}}, "허구 미술 · 시대 고증 아님 · 설명 보기"), /* @__PURE__ */ React.createElement("p", { className: "muted", id: "vn-art-note" })), /* @__PURE__ */ React.createElement("div", { id: "unlock-area" }), /* @__PURE__ */ React.createElement("section", { id: "turn-card", className: "card" }), /* @__PURE__ */ React.createElement("section", { className: "choices", id: "choices" }), /* @__PURE__ */ React.createElement("section", { id: "portfolio", className: "card" }), /* @__PURE__ */ React.createElement("p", { className: "muted", id: "footnote" }), /* @__PURE__ */ React.createElement("details", { className: "card record-copy", id: "record-copy" }, /* @__PURE__ */ React.createElement("summary", null, "현재 진행\xB7완료 회귀 사본 보관"), /* @__PURE__ */ React.createElement("p", null, "현재 이 페이지의 진행과 보관된 완료 회귀를 JSON 원문으로 준비합니다. 게임 진행\xB7자산\xB7주문\xB7보관기록을 바꾸지 않고, 다른 곳에 보내지 않아요."), /* @__PURE__ */ React.createElement("p", null, "자동 동기화나 복구 기능은 아닙니다. 가져오기 화면에서 별도로 검사·확인해야 하며 일부 사본은 지원하지 않습니다. 이전 회귀에서 이미 요약한 월별 상세는 사본으로도 되살릴 수 없습니다. 파일에는 게임 선택\xB7자산 기록이 들어가므로 공유에 주의해 주세요."), /* @__PURE__ */ React.createElement("button", { type: "button", id: "record-copy-prepare", disabled: !allReady || copyBusy || !!bootFailure || !!storageFailure, onClick: () => void prepareRecordCopy() }, copyBusy ? "기록 확인 중" : "읽기 대조 후 사본 준비"), /* @__PURE__ */ React.createElement("p", { role: "status", id: "record-copy-status" }, copyMessage), recordCopy && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", null, recordCopy.scope === "preview-memory-only" ? "프리뷰 메모리 사본 \xB7 영속 저장 확인이 아닙니다." : "이 브라우저 저장 읽기 대조 사본 \xB7 다른 기기 보존 확인이 아닙니다."), /* @__PURE__ */ React.createElement("p", null, "준비 시점: ", new Date(JSON.parse(recordCopy.json).createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }), " (KST) \xB7 진행월 ", recordCopy.summary.currentMonth || "없음", " \xB7 완료 회귀 ", recordCopy.summary.completedLives, "건"), /* @__PURE__ */ React.createElement("p", null, "아래 사본은 준비한 시점에 고정됩니다. 이후 진행을 담으려면 다시 준비해 주세요."), /* @__PURE__ */ React.createElement("button", { type: "button", id: "record-copy-download", onClick: downloadRecordCopy }, "준비한 JSON 파일 받기"), /* @__PURE__ */ React.createElement("details", null, /* @__PURE__ */ React.createElement("summary", null, "준비한 사본 원문 보기"), /* @__PURE__ */ React.createElement("textarea", { id: "record-copy-raw", "aria-label": "준비한 게임 기록 사본 원문", readOnly: true, rows: 8, value: recordCopy.json, onFocus: (e) => e.target.select() })))), /* @__PURE__ */ React.createElement("details", { className: "muted asset-license" }, /* @__PURE__ */ React.createElement("summary", null, "생성 배경\xB7인물 이미지 라이선스"), /* @__PURE__ */ React.createElement("pre", null, assetLicenseRaw)), confirmAsk && /* @__PURE__ */ React.createElement("div", { className: "confirm-overlay", role: "dialog", "aria-modal": "true" }, /* @__PURE__ */ React.createElement("div", { className: "confirm-card" }, /* @__PURE__ */ React.createElement("p", null, confirmAsk.msg), /* @__PURE__ */ React.createElement("button", { type: "button", className: "confirm-accept", onClick: onConfirmAccept }, confirmLabel), /* @__PURE__ */ React.createElement("button", { type: "button", className: "confirm-cancel", onClick: () => setConfirmAsk(null) }, "취소"))));
 }

@@ -16,3 +16,5 @@ return {contents:text,loader:args.path.endsWith('.jsx')?'jsx':'js'};});
 }}]});
 await rename('1-game.css','5-game.css');
 await writeFile('index.html','<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>리턴: 회귀 투자자</title><link rel="stylesheet" href="5-game.css"></head><body><div id="root"></div><script defer src="1-choice-guide.js"></script><script defer src="1-game.js"></script></body></html>');
+
+await import('./46-build-import.mjs');

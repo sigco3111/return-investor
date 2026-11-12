@@ -1,20 +1,28 @@
 (function () {
   'use strict';
-  // Entry actions replace long content above the previous button position.
-  // Move only after an explicit main start or the first career / school-policy selection.
-  // Reopening saves, monthly actions and disclosure toggles do not move focus.
+  // Explicit reading transitions only. No movement on boot, disclosures,
+  // product/order controls, unchanged decisions, failures or confirmations.
+  function readingKey() {
+    const card = document.getElementById('turn-card');
+    return [card?.querySelector('.date')?.textContent, card?.querySelector('h2')?.textContent].join('|');
+  }
   document.addEventListener('click', function (event) {
     const button = event.target.closest && event.target.closest('button');
     if (!button || button.disabled) return;
-    const oldHeading = document.querySelector('#turn-card h2');
-    const firstCareer = button.parentElement?.id === 'choices' && ['고1, 시간을 어디에 쓸까', '재학 중 시간 배분 방침을 정한다'].includes(oldHeading?.textContent);
-    if (button.id !== 'cash-main-start' && !firstCareer) return;
+    const priorChapter = document.getElementById('vn-first-chapter');
+    const chapterControl = button.id === 'vn-chapter-next' || button.id === 'vn-chapter-skip';
+    const firstCareer = ['고1, 시간을 어디에 쓸까', '재학 중 시간 배분 방침을 정한다'].includes(document.querySelector('#turn-card h2')?.textContent);
+    const ordinaryChoice = button.parentElement?.id === 'choices' && button.id !== 'school-progress' && (firstCareer || /^(유지|다음 달로 진입|건너뛰기)/.test(button.textContent));
+    const start = button.id === 'cash-main-start';
+    if (!start && !ordinaryChoice && !chapterControl) return;
+    const previousKey = readingKey();
     requestAnimationFrame(function () {
-      if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay')) return;
+      if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay') || document.querySelector('main')?.inert) return;
       const card = document.getElementById('turn-card');
       const heading = card && card.querySelector('h2');
-      if (!heading || heading === oldHeading || !document.querySelector('#choices > button:not(:disabled)')) return;
       const chapter = document.getElementById('vn-first-chapter');
+      if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
+      if (chapterControl ? (!priorChapter || chapter) : (!start && previousKey === readingKey() && chapter === priorChapter)) return;
       const target = chapter || heading;
       target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });

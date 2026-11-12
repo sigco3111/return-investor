@@ -2,9 +2,18 @@
   "name": "return-investor",
   "version": "0.0.1",
   "private": true,
-  "description": "리턴: 회귀 투자자 개발 코드 스냅샷. 역사 데이터는 공개본에서 제외.",
+  "description": "리턴: 회귀 투자자 정적 웹 개발판",
   "scripts": {
     "test": "node check-asset-review.js && node check-product-lifecycle.js && node check-fictional-ledger.js && node check-save-shape.js",
-    "check": "node --check engine.js && node --check asset-review.js && node --check economy-policy.js && node --check product-lifecycle.js && node --check fictional-ledger.js"
+    "check": "node --check engine.js && node --check asset-review.js && node --check economy-policy.js && node --check product-lifecycle.js && node --check fictional-ledger.js",
+    "build": "node 45-build-pages.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5"
   }
 }

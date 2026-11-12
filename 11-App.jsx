@@ -201,6 +201,13 @@ function installStorageShim(initial, ss, setLives, livesState, onFailure) {
   Object.defineProperty(window, "localStorage", { configurable: true, value: shim });
 }
 const VN_BGS = {
+  "studio-early": "4-bg-studio-early-common.png",
+  "studio-middle": "5-bg-studio-middle-common.png",
+  "studio-recent": "6-bg-studio-recent-common.png",
+  "home-early": "1-bg-home-early-common.png",
+  "home-middle": "2-bg-home-middle-common.png",
+  "home-recent": "3-bg-home-recent-common.png",
+
   "classroom": "bg-classroom-common.png",
   "university": "bg-university-common.png",
   "office": "bg-office-common.png",
@@ -222,6 +229,7 @@ function vnBgCss(urls) {
     ['.vn-stage[data-bg="studio"] .vn-bg', urls["studio"]],
     ['.vn-stage[data-bg="alba"] .vn-bg', urls["alba"]]
   ];
+  for (const context of ['studio','home']) for (const era of ['early','middle','recent']) rules.push(['.vn-stage[data-bg="'+context+'"][data-era="'+era+'"] .vn-bg', urls[context+'-'+era]]);
   for (const [sel, url] of rules) if (url) css += `${sel} { background-image: url('${url}'); }
 `;
   return css;
@@ -301,20 +309,33 @@ export function App() {
   ], { failed: !!storageFailure, blocked: !!bootFailure || archiveBlocked });
   useEffect(() => {
     let cancelled = false;
-    for (const [key, path] of Object.entries(VN_BGS)) {
+    const requested = new Set();
+    const load = (key) => {
+      const path = VN_BGS[key];
+      if (!path || requested.has(key)) return;
+      requested.add(key);
       fetch(path).then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         return r.blob();
-      }).then((blob) => {
+      }).then(async (blob) => {
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
+        const image = new Image();
+        image.src = url;
+        try { await image.decode(); } catch { URL.revokeObjectURL(url); return; }
+        if (cancelled) { URL.revokeObjectURL(url); return; }
         setVnUrls((prev) => prev[key] ? prev : { ...prev, [key]: url });
-      }).catch(() => {
-      });
-    }
-    return () => {
-      cancelled = true;
+      }).catch(() => {});
     };
+    for (const key of Object.keys(VN_BGS)) if (!key.includes('-')) load(key);
+    const stage = document.getElementById('vn-stage');
+    const loadCurrentEra = () => {
+      if (stage && ['home','studio'].includes(stage.dataset.bg)) load(stage.dataset.bg + '-' + stage.dataset.era);
+    };
+    const observer = new MutationObserver(loadCurrentEra);
+    if (stage) observer.observe(stage, {attributes:true, attributeFilter:['data-bg','data-era']});
+    loadCurrentEra();
+    return () => { cancelled = true; observer.disconnect(); };
   }, []);
   useEffect(() => {
     const track = (e) => {

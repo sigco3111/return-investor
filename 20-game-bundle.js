@@ -3287,7 +3287,10 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
         bgName = "\uBCF5\uBB34 \uB9C9\uC0AC";
       }
       stage.dataset.bg = bg;
-      stage.dataset.era = "shared";
+      const visualEraYear = Number(String(state.month).slice(0, 4));
+      const visualEra = visualEraYear < 2000 ? "early" : visualEraYear < 2010 ? "middle" : "recent";
+      const visualEraName = {early:"아날로그풍",middle:"초기 디지털풍",recent:"최근 디지털풍"};
+      stage.dataset.era = ["home", "studio"].includes(bg) ? visualEra : "shared";
       const visualCommonYear = Number(String(state.month).slice(0, 4));
       const visualCommonAge = b && Number.isInteger(b.year) ? visualCommonYear - b.year : null;
       const visualCommonCharacter = bg === "barracks" ? "soldier" : bg === "classroom" || bg === "alba" ? "student" : visualCommonAge !== null && visualCommonAge >= 40 ? "mature" : "adult";
@@ -3309,9 +3312,9 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
         }
       }
       const label = document.getElementById("vn-scene-label");
-      if (label) label.textContent = bgName + " \xB7 \uACF5\uD1B5 \uD5C8\uAD6C \uC2A4\uD0C0\uC77C";
+      if (label) label.textContent = bgName + " · " + (["home", "studio"].includes(bg) ? visualEraName[visualEra] + " / 허구 미술" : "공통 허구 스타일");
       const artNote = document.getElementById("vn-art-note");
-      if (artNote) artNote.textContent = "\uACF5\uD1B5 \uBBF8\uC220 \uC138\uD2B8: \uBC30\uACBD 7\uC885\xB7\uC8FC\uC778\uACF5 4\uC885\xB7\uC18C\uD488 3\uC885\uC744 \uBD84\uB9AC\uD574 \uC7AC\uC0AC\uC6A9\uD569\uB2C8\uB2E4. 32\uBE44\uD2B8 \uCF58\uC194\uD48D \uD5C8\uAD6C \uC5F0\uCD9C\uC774\uBA70 \uC2E4\uC81C \uC2DC\uB300\xB7\uC7A5\uC18C\xB7\uBCF5\uC7A5 \uACE0\uC99D\uC740 \uC544\uB2D9\uB2C8\uB2E4. \uC778\uBB3C\uC740 \uC0DD\uC560 \uB2E8\uACC4\uC5D0 \uB530\uB77C \uBC14\uB00C\uBA70 \uC911\uB144 \uD45C\uD604\uC740 \uC5F0\uB3C4 \uCC28 40\uC138\uBD80\uD130 \uC4F0\uB294 \uBBF8\uC220 \uAE30\uC900\uC785\uB2C8\uB2E4. \uC18C\uD488\uC740 \uD559\uC5C5\xB7\uC77D\uB294 \uC790\uB8CC\xB7\uD604\uC7AC \uC8FC\uD0DD \uC18C\uC720\uB97C \uC0C1\uC9D5\uD560 \uBFD0 \uC0C8 \uC544\uC774\uD15C\xB7\uD6A8\uACFC\uB294 \uC5C6\uC2B5\uB2C8\uB2E4.";
+      if (artNote) artNote.textContent = "원룸·전업 서재는 게임 달력의 2000년 이전/2000~2009년/2010년 이후에 따라 생활 도구와 빛이 다른 허구 배경을 씁니다. 연도 경계는 미술 구분이며 실제 보급 시점·장소·복장 고증이 아닙니다. 배경은 자산이나 집의 실제 모습·구입 장비를 나타내지 않고 돈·능력·선택 결과를 바꾸지 않습니다. 나머지 공간은 기존 공통 배경입니다. 인물 4종과 소품 3종은 계속 재사용하며 중년 표현은 연도 차 40세부터입니다. 열쇠는 현재 게임 주택 소유만 상징합니다.";
     }
     function cashSummary() {
       const rows = state.cashEvents.rows;

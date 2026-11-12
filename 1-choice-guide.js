@@ -1,5 +1,21 @@
 (function () {
   'use strict';
+  // A new game replaces the long birth/rules form above the old scroll position.
+  // Move once, only for an explicit successful main-start activation. Reopening a
+  // saved game or expanding an explanation must not move the user's reading point.
+  document.addEventListener('click', function (event) {
+    const start = event.target.closest && event.target.closest('#cash-main-start');
+    if (!start || start.disabled) return;
+    requestAnimationFrame(function () {
+      if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay')) return;
+      const card = document.getElementById('turn-card');
+      const heading = card && card.querySelector('h2');
+      if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+      card.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
+  }, true);
   function updateChoiceGuide() {
     const card = document.getElementById('turn-card');
     if (!card) return;

@@ -101,6 +101,44 @@
       button.after(note, detail);
     }
   }
+  let activeConfirm = null;
+  let confirmOpener = null;
+  function updateConfirmFocus() {
+    const modal = document.querySelector('.confirm-overlay');
+    if (modal === activeConfirm) return;
+    if (modal) {
+      confirmOpener = document.activeElement;
+      activeConfirm = modal;
+      modal.setAttribute('aria-label', '선택 확인');
+      const message = modal.querySelector('.confirm-card p');
+      if (message) {
+        message.id = 'return-confirm-message';
+        modal.setAttribute('aria-describedby', message.id);
+      }
+      modal.querySelector('.confirm-cancel')?.focus({ preventScroll: true });
+    } else {
+      activeConfirm = null;
+      const target = confirmOpener?.isConnected && !confirmOpener.disabled ? confirmOpener : document.querySelector('#turn-card h2');
+      confirmOpener = null;
+      if (target) {
+        if (target.tagName === 'H2') target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      }
+    }
+  }
+  document.addEventListener('keydown', function (event) {
+    const modal = document.querySelector('.confirm-overlay');
+    if (!modal || !['Tab', 'Escape'].includes(event.key)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const cancel = modal.querySelector('.confirm-cancel');
+    if (event.key === 'Escape') { cancel?.click(); return; }
+    const buttons = Array.from(modal.querySelectorAll('button:not(:disabled)'));
+    if (!buttons.length) return;
+    const index = buttons.indexOf(document.activeElement);
+    const next = index < 0 ? buttons.indexOf(cancel) : (index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
+    buttons[Math.max(0, next)].focus({ preventScroll: true });
+  }, true);
   function updatePortfolioActions() {
     for (const id of ['dash-link', 'voluntary-end-open', 'living-scenario-open']) {
       const original = document.getElementById(id);
@@ -215,9 +253,10 @@
     detail.append(summary, original);
     intro.after(detail);
   }
-  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); updatePortfolioActions(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
+  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); updatePortfolioActions(); updateConfirmFocus(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
   updateChoiceGuide();
   updateProductGuide();
   updateUsedDeferralGuide();
   updatePortfolioActions();
+  updateConfirmFocus();
 })();

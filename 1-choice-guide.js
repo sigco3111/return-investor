@@ -101,6 +101,20 @@
       button.after(note, detail);
     }
   }
+  function updatePortfolioActions() {
+    for (const id of ['dash-link', 'voluntary-end-open', 'living-scenario-open']) {
+      const original = document.getElementById(id);
+      if (original?.tagName !== 'SPAN' || typeof original.onclick !== 'function') continue;
+      const button = document.createElement('button');
+      button.id = id;
+      button.type = 'button';
+      button.textContent = original.textContent;
+      button.className = 'portfolio-action-button';
+      button.style.cssText = 'min-height:44px;min-width:44px;max-width:100%;padding:8px 10px;border:1px solid #a7b2aa;border-radius:7px;background:#f3f6f1;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere';
+      button.onclick = original.onclick;
+      original.replaceWith(button);
+    }
+  }
   function updateUsedDeferralGuide() {
     const card = document.getElementById('turn-card');
     if (card?.querySelector('h2')?.textContent !== '입영 통지서가 도착했다' || window.__returnStorageHalted) return;
@@ -201,8 +215,9 @@
     detail.append(summary, original);
     intro.after(detail);
   }
-  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
+  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); updatePortfolioActions(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
   updateChoiceGuide();
   updateProductGuide();
   updateUsedDeferralGuide();
+  updatePortfolioActions();
 })();

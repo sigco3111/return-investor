@@ -30,10 +30,27 @@
     requestAnimationFrame(showReadingStart);
   }
   document.addEventListener('click', function (event) {
-    const button = event.target.closest && event.target.closest('button');
+    const button = event.target.closest && event.target.closest('button, #dash-link');
     if (!button || button.disabled) return;
     if (button.id === 'school-progress') {
       pendingSchoolReading = true;
+      return;
+    }
+    const dashboardTitle = document.querySelector('#turn-card h2')?.textContent;
+    const dashboardEntry = ['dash-link', 'previous-life-review'].includes(button.id);
+    const dashboardBack = dashboardTitle === '회귀 대시보드' && button.parentElement?.id === 'choices' && button.textContent === '돌아가기';
+    if (dashboardEntry || dashboardBack) {
+      requestAnimationFrame(function () {
+        if (window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay') || document.querySelector('main')?.inert) return;
+        const card = document.getElementById('turn-card');
+        const heading = card?.querySelector('h2');
+        if (!heading || (dashboardEntry ? heading.textContent !== '회귀 대시보드' : heading.textContent === '회귀 대시보드')) return;
+        if (dashboardEntry || document.getElementById('by')) {
+          heading.setAttribute('tabindex', '-1');
+          heading.focus({ preventScroll: true });
+          card.scrollIntoView({ block: 'start', behavior: 'instant' });
+        } else showReadingStart();
+      });
       return;
     }
     const priorChapter = document.getElementById('vn-first-chapter');

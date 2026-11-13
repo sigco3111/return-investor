@@ -14,9 +14,15 @@ https://ecos.bok.or.kr/#/SearchStat
 
 직접 작성한 턴 유형·단계·시연 시간 규칙입니다. 아래 MIT License는 turns.json에만 적용합니다. 외부 통계와 역사 기사의 문장·사진·연속시세표는 포함하지 않습니다.
 
-## 아직 포함하지 않은 필수 파일
+## 현재 본게임 자료 배포
 
-`events.json`, `prices.json`, `unlocks.json`, `early-school-news.json`은 아직 공개하지 않았습니다. 따라서 현재 저장소만으로 본게임을 정상 플레이할 수 없으며 공개 플레이 배포가 아닙니다. 미확인 시세를 새로 만들거나 원래 게임을 빈 자료로 바꾸지 않았습니다.
+본게임은 GitHub Pages에서 플레이할 수 있습니다.
+
+https://sigco3111.github.io/return-investor/
+
+`events.json`, `prices.json`, `unlocks.json`, `early-school-news.json`과 보존 세대 자료는 저장소 루트의 `3-game-data.json.gz`에 경로별 JSON 문자열로 묶여 있습니다. 루트의 `22-main.jsx`를 빌드한 실행본이 이 압축 묶음을 읽습니다. `data/` 폴더의 개별 파일만으로 전체 배포 자료를 판단하지 마세요. 새로 받은 저장소의 실행·빌드·브라우저 점검 방법은 루트 `README.md`를 따릅니다.
+
+압축 배포는 자료의 권리 상태나 정확도를 바꾸지 않습니다. 외부 통계·시세·역사 자료는 각 출처와 자료별 고지를 유지하며, 아래 MIT License가 외부 자료 전체에 적용되는 것은 아닙니다. 당시 공개일·실제 상품 기준가·거래 가능 가격이 확인되지 않은 지점은 게임 안의 자료 한계 고지를 함께 확인해야 합니다.
 
 ## turns.json의 MIT License
 

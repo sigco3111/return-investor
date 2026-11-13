@@ -13,7 +13,7 @@
     const heading = card?.querySelector('h2');
     if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
     const chapter = document.getElementById('vn-first-chapter');
-    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
+    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다', '이 대기 주문만 취소할까'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
     const target = chapter || result || heading;
     target.setAttribute('tabindex', '-1');
     target.focus({ preventScroll: true });
@@ -42,8 +42,9 @@
     const skipPreview = document.querySelector('#turn-card h2')?.textContent === '여기까지 진행됩니다';
     const ordinaryChoice = button.parentElement?.id === 'choices' && (firstCareer || /^(유지|다음 달로 진입|건너뛰기|다음 뉴스까지 건너뛰기)/.test(button.textContent) || (skipPreview && /^(\d+개월 건너뛰기 실행|취소 \(돌아가기\))$/.test(button.textContent)));
     const positionTransition = button.parentElement?.id === 'choices' && (['상품 선택', '비중 결정'].includes(document.querySelector('#turn-card h2')?.textContent) || ['리밸런싱 (비중 조정)', '이 뉴스에 대응해 포지션 조정'].includes(button.textContent));
+    const cancellationTransition = button.classList.contains('single-order-cancel-open') || ['single-order-cancel-back', 'single-order-cancel-confirm'].includes(button.id);
     const start = button.id === 'cash-main-start';
-    if (!start && !ordinaryChoice && !chapterControl && !positionTransition) return;
+    if (!start && !ordinaryChoice && !chapterControl && !positionTransition && !cancellationTransition) return;
     const previousKey = readingKey();
     requestAnimationFrame(function () {
       if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay') || document.querySelector('main')?.inert) return;

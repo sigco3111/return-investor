@@ -1401,6 +1401,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       if (failedFiles.length) return showDataLoadUnavailable(failedFiles);
       const [baseEvents, prices, turns, unlocks, rates, schoolResult] = results.map((r) => r.value), schoolEvents = schoolResult || [];
       const PRESERVED_SETS = [
+        { ev: "data/events.2026-11-13-gen138.json", pr: "data/prices.2026-11-13-gen138.json" }, // Exact current creation bytes before domestic monthly density.
         { ev: "data/events.2026-11-13-gen137.json", pr: "data/prices.2026-11-13-gen137.json" },
         { ev: "data/events.2026-11-13-gen136.json", pr: "data/prices.2026-11-13-gen136.json" },
         // exact136 before official monthly FX observations
@@ -2746,6 +2747,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
     }
     function priceAgeNote(pt) {
       if (!pt) return "";
+      if (pt.date_policy === "official-monthend-close-plus-two-calendar-days-demo-gate" && ["kospi", "kosdaq"].includes(pt.series)) return "한국거래소 작성 · ECOS 현재 보관자료 · 최초공개시각/원빈티지 미확인 · 관측일+2달력일 게임 게이트 " + pt.usable_from + " · 당시 실제 상품가격·실거래 보장 아님";
       if (pt.date_policy === "day_after_observed_article_day_conservative_demo") return "\uD604\uC7AC ECOS \uBCF4\uAD00\uC790\uB8CC\xB7\uB2F9\uC2DC \uC885\uAC00 \uBCF4\uB3C4 \uB300\uC870 \xB7 \uCD5C\uCD08\uACF5\uD45C\xB7\uC6D0\uBE48\uD2F0\uC9C0\xB7\uB2F9\uC2DC \uC885\uAC00\uC2DC\uAC01 \uBBF8\uD655\uC815 \xB7 \uAE30\uC0AC\uC77C \uB2E4\uC74C \uB0A0 \uC774\uC6A9\uAC8C\uC774\uD2B8 " + pt.usable_from + " \xB7 \uC2E4\uC81C \uAC70\uB798\uAC00 \uC544\uB2D8";
       if (pt.date_precision === "year" && pt.official_ecos_source) return "ECOS(\uD55C\uAD6D\uC740\uD589) \uC5F0\uB9D0 \uB9C8\uC9C0\uB9C9 \uC885\uAC00 \xB7 \uACFC\uAC70 \uCD5C\uCD08\uACF5\uD45C\uC2DC\uC810 \uBBF8\uD655\uC778 \xB7 \uB2E4\uC74C\uD574 \uC774\uC6A9\uAC8C\uC774\uD2B8 \uC720\uC9C0 \xB7 \uB2F9\uC77C \uAC70\uB798\uAC00 \uC544\uB2D8";
       if (pt.date_precision === "year") return "\uC5F0\uB9D0 \uC790\uB8CC \xB7 \uC2E4\uC81C \uAC70\uB798\uC77C \uBBF8\uD655\uC778 \xB7 \uB2F9\uC77C \uAC70\uB798\uAC00 \uC544\uB2D8";

@@ -84,6 +84,25 @@
       button.after(note, detail);
     }
   }
+  function updateUsedDeferralGuide() {
+    const card = document.getElementById('turn-card');
+    if (card?.querySelector('h2')?.textContent !== '입영 통지서가 도착했다' || window.__returnStorageHalted) return;
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem('regression-invest-school-calendar-save-v1')); } catch (_) { return; }
+    if (saved?.flags?.deferredUsed !== true) return;
+    const month = card.querySelector('.date')?.textContent?.slice(0, 7);
+    if (month !== saved.month) return;
+    const button = Array.from(document.querySelectorAll('#choices > button')).find(b => b.textContent.startsWith('1년 유예 [시험용 가정'));
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = '1년 유예 사용 완료 · 추가 유예 불가 [게임규칙]';
+    if (!card.querySelector('.used-deferral-note')) {
+      const note = document.createElement('p');
+      note.className = 'note used-deferral-note';
+      note.textContent = '이번 회귀의 1년 유예를 이미 사용했습니다. 입대 예정은 ' + saved.flags.enlistAt + ' 그대로이며 추가 유예는 할 수 없습니다. 실제 병역 유예 규정이 아닌 게임 안의 1회 선택입니다.';
+      card.append(note);
+    }
+  }
   function updateChoiceGuide() {
     const card = document.getElementById('turn-card');
     if (!card) return;
@@ -165,7 +184,8 @@
     detail.append(summary, original);
     intro.after(detail);
   }
-  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
+  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
   updateChoiceGuide();
   updateProductGuide();
+  updateUsedDeferralGuide();
 })();

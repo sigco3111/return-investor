@@ -1401,6 +1401,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       if (failedFiles.length) return showDataLoadUnavailable(failedFiles);
       const [baseEvents, prices, turns, unlocks, rates, schoolResult] = results.map((r) => r.value), schoolEvents = schoolResult || [];
       const PRESERVED_SETS = [
+        { ev: "data/events.2026-11-13-gen139.json", pr: "data/prices.2026-11-13-gen139.json" }, // Exact creation bytes before Yahoo domestic index history.
         { ev: "data/events.2026-11-13-gen138.json", pr: "data/prices.2026-11-13-gen138.json" }, // Exact current creation bytes before domestic monthly density.
         { ev: "data/events.2026-11-13-gen137.json", pr: "data/prices.2026-11-13-gen137.json" },
         { ev: "data/events.2026-11-13-gen136.json", pr: "data/prices.2026-11-13-gen136.json" },

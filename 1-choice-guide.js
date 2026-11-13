@@ -284,3 +284,21 @@
   updateConfirmFocus();
   updateOrderWeightGuide();
 })();
+
+(function () {
+  'use strict';
+  function indexNotice() {
+    const target = document.getElementById('intro-details');
+    if (!target || document.getElementById('yahoo-index-data-note')) return;
+    const note = document.createElement('p');
+    note.id = 'yahoo-index-data-note';
+    note.append(document.createTextNode('신규 회귀의 국내 지수는 Yahoo Finance 일별 종가를 가상 지수상품 평가에 사용합니다(코스피1996-12-11~, 코스닥2000-10-16~). 이전 초기 관측과 기존 저장은 유지합니다. 실제 당시 펀드·ETF 가격이나 매수 경로가 아니며 분배금·보수·세금은 미반영입니다. 관측일+2달력일은 게임 게이트이고 최초공개시각은 미확인입니다. Yahoo의 재배포 제한 안내가 있으며 소유자가 위험을 수용한 반영일 뿐 제공자 허락은 확인되지 않았습니다. '));
+    const link = document.createElement('a');
+    link.href = '7-DATA-NOTICE.md';
+    link.textContent = '출처·조건 자세히';
+    note.append(link);
+    target.append(note);
+  }
+  new MutationObserver(indexNotice).observe(document.documentElement, {childList: true, subtree: true});
+  indexNotice();
+})();

@@ -4,7 +4,7 @@
   // same-screen inputs, unchanged decisions, failures or modal confirmations.
   function readingKey() {
     const card = document.getElementById('turn-card');
-    return [card?.querySelector('.date')?.textContent, card?.querySelector('h2')?.textContent, !!document.getElementById('cash-allocation-confirm'), !!document.getElementById('cash-reserve-confirm')].join('|');
+    return [card?.querySelector('.date')?.textContent, card?.querySelector('h2')?.textContent, !!document.getElementById('cash-allocation-confirm'), !!document.getElementById('cash-reserve-confirm'), !!document.getElementById('career-cycle-confirm')].join('|');
   }
   let pendingSchoolReading = false;
   function showReadingStart() {
@@ -13,7 +13,7 @@
     const heading = card?.querySelector('h2');
     if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
     const chapter = document.getElementById('vn-first-chapter');
-    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다', '이 대기 주문만 취소할까', '한 상품에 모을까, 두 상품에 나눌까', '기존 적립 예약금을 현금으로 돌릴까', '투자 전에 현금을 얼마나 남길까'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
+    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다', '이 대기 주문만 취소할까', '한 상품에 모을까, 두 상품에 나눌까', '기존 적립 예약금을 현금으로 돌릴까', '투자 전에 현금을 얼마나 남길까', '수입을 다시 쌓을까, 투자 시간을 확보할까'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
     const target = chapter || result || heading;
     target.setAttribute('tabindex', '-1');
     target.focus({ preventScroll: true });
@@ -43,7 +43,7 @@
     const ordinaryChoice = button.parentElement?.id === 'choices' && (firstCareer || /^(유지|다음 달로 진입|건너뛰기|다음 뉴스까지 건너뛰기)/.test(button.textContent) || (skipPreview && /^(\d+개월 건너뛰기 실행|취소 \(돌아가기\))$/.test(button.textContent)));
     const positionTransition = button.parentElement?.id === 'choices' && (['상품 선택', '비중 결정'].includes(document.querySelector('#turn-card h2')?.textContent) || ['리밸런싱 (비중 조정)', '이 뉴스에 대응해 포지션 조정'].includes(button.textContent));
     const cancellationTransition = button.classList.contains('single-order-cancel-open') || ['single-order-cancel-back', 'single-order-cancel-confirm', 'job-reservations-cancel-open', 'job-reservations-cancel-back', 'job-reservations-cancel-confirm'].includes(button.id);
-    const planTransition = ['job-plan-open', 'career-plan-shortcut', 'cash-allocation-confirm', 'cash-allocation-edit', 'cash-allocation-back', 'cash-reserve-open', 'cash-reserve-confirm', 'cash-reserve-review-back', 'cash-reserve-back'].includes(button.id) || (button.parentElement?.id === 'choices' && (button.hasAttribute('data-plan-percent') || button.hasAttribute('data-reserve-target')));
+    const planTransition = ['job-plan-open', 'career-plan-shortcut', 'cash-allocation-confirm', 'cash-allocation-edit', 'cash-allocation-back', 'cash-reserve-open', 'cash-reserve-confirm', 'cash-reserve-review-back', 'cash-reserve-back', 'career-cycle-open', 'career-cycle-confirm', 'career-cycle-review-back', 'career-cycle-back'].includes(button.id) || (button.parentElement?.id === 'choices' && (button.hasAttribute('data-plan-percent') || button.hasAttribute('data-reserve-target') || button.hasAttribute('data-career-cycle')));
     const start = button.id === 'cash-main-start';
     if (!start && !ordinaryChoice && !chapterControl && !positionTransition && !cancellationTransition && !planTransition) return;
     const previousKey = readingKey();

@@ -143,13 +143,16 @@ try {
   assert.equal(copy.scope, 'device-local-confirmed'); assert.ok(copy.activeSaveRaw === before, 'Prepared copy kept exact active save'); assert.ok((await state()) === before, 'Read-only action kept exact active save');
   await navigate(base); await wait('#choices>button'); assert.ok((await state()) === before, 'Read-only action kept exact active save');
   // A normal-play sale provides cash for a real partial-repayment confirmation.
+  // Wait for two unpaid tuition bills. With only the first bill outstanding,
+  // selling the holding can cover all arrears and is not a partial-repayment case.
   // State is inspected, never injected or rewritten by the check.
   await chapter(); await choice('리밸런싱'); await choice('국내 지수'); await click('#order-execute');
   let reachedArrears = false;
   for (let step = 0; step < 150; step++) {
     await chapter();
     const current = JSON.parse(await state());
-    if (current.month >= '1999-07' && await visible('.arrears-choice-note')) { reachedArrears = true; break; }
+    const unpaidBills = current.cashEvents.rows.filter(row => row.living + row.tuition - row.paid > 0);
+    if (current.month >= '1999-07' && unpaidBills.length >= 2 && await visible('.arrears-choice-note')) { reachedArrears = true; break; }
     const labels = await evaluate('Array.from(document.querySelectorAll("#choices>button")).filter(e=>!e.disabled).map(e=>({id:e.id,text:e.textContent}))');
     if (labels.some(e=>e.id === 'school-progress')) { await click('#school-progress'); await until(()=>evaluate('!document.querySelector("main").inert'), 'school progress'); await frame(); continue; }
     const next = labels.find(e=>/^(현재 방침 유지|유지|학업 중심|대학 진학|확인|바로 입대|복학)/.test(e.text)) || (labels.length === 1 ? labels[0] : null);

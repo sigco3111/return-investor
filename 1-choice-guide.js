@@ -77,6 +77,29 @@
       showReadingStart();
     });
   }, true);
+  function updateOrderWeightGuide() {
+    const card = document.getElementById('turn-card');
+    if (card?.querySelector('h2')?.textContent !== '비중 결정' || !/포지션 조정 2\/2/.test(card.querySelector('.date')?.textContent || '')) return;
+    const slider = card.querySelector('input#w[type="range"]');
+    const preview = card.querySelector('#order-liquidity-preview');
+    const names = {
+      'buy-reserve': '매수 예약에 쓸 현금 비중',
+      'deposit': '예치할 현금 비중',
+      'sell-lock': '매도 주문에 잠글 보유 수량 비중',
+      'withdraw': '해지할 보유액 비중'
+    };
+    const name = names[preview?.dataset.kind];
+    if (!slider || !name) return;
+    let label = card.querySelector('#order-weight-label');
+    if (!label) {
+      label = document.createElement('label');
+      label.id = 'order-weight-label';
+      label.htmlFor = slider.id;
+      slider.parentElement.before(label);
+    }
+    if (label.textContent !== name) label.textContent = name;
+    slider.setAttribute('aria-valuetext', slider.value + '%');
+  }
   function updateProductGuide() {
     const card = document.getElementById('turn-card');
     if (card?.querySelector('h2')?.textContent !== '상품 선택' || !/포지션 조정 1\/2/.test(card.querySelector('.date')?.textContent || '')) return;
@@ -253,10 +276,11 @@
     detail.append(summary, original);
     intro.after(detail);
   }
-  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); updatePortfolioActions(); updateConfirmFocus(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
+  new MutationObserver(function () { updateChoiceGuide(); updateProductGuide(); updateUsedDeferralGuide(); updatePortfolioActions(); updateConfirmFocus(); updateOrderWeightGuide(); finishSchoolReading(); }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['inert']});
   updateChoiceGuide();
   updateProductGuide();
   updateUsedDeferralGuide();
   updatePortfolioActions();
   updateConfirmFocus();
+  updateOrderWeightGuide();
 })();

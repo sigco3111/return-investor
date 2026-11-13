@@ -559,6 +559,12 @@ export function App() {
     return () => mo.disconnect();
   }, []);
   const startEngine = (saveJson, archiveJson = livesRaw) => {
+    // saveJson is decoded by the owning save store, unlike the old shim-only save key.
+    if(saveJson!==null){let loaded;try{loaded=JSON.parse(saveJson);}catch{setStorageFailure({kind:'read',reason:'private-source-route-invalid',json:saveJson});return;}
+      if(loaded?.commonChaos?.policy==='l2-common-source-prep-v1'){window.location.replace('./source-v1.html'+window.location.search);return;}
+      if(!Object.prototype.hasOwnProperty.call(loaded,'commonChaos')){window.location.replace('./legacy.html'+window.location.search);return;}
+    }
+
     delete window.__returnDecisionData;
     const ctx = storeRef.current;
     if (!ctx) return;

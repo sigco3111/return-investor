@@ -1391,6 +1391,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return { date: state.month + "-01", postClose: false };
     }
     async function boot() {
+      if(!localCommonShape())return showSaveConflict("다른 비공개후보 저장은 자동이전하지 않습니다.","common-source-shape");
       if (SCHOOL_MODE) document.querySelector("header p").textContent = CAREER_TRIAL ? "\uACC4\uD68D\uD615 \uCDE8\uC5C5 / \uB300\uC751\uD615 \uC804\uC5C5 \xB7 \uBCC4\uB3C4 \uC2DC\uC81C\uD488 \xB7 \uAE30\uC874 \uC800\uC7A5 \uBBF8\uBCC0\uACBD" : SCHOOL_CASH_MODE ? "\uACE01 \uB2EC\uB825 + \uD604\uAE08\uC0AC\uAC74 \uC5F0\uACB0 \uC2DC\uD5D8 \xB7 \uC0C8 \uC800\uC7A5\uD0A4 \xB7 \uBAA8\uB4E0 \uAE08\uC561 \uC784\uC758\uAC12" : "\uC0DD\uB144 \uACE01 \uB2EC\uB825 \uC2DC\uC791(\uBCF8\uD3B8) \xB7 \uC0DD\uB144\uC6D4\uBCC4 \uC800\uC7A5 \xB7 \uC5ED\uC0AC\uC790\uB8CC/\uC0DD\uD65C\uACBD\uC81C/\uC0C1\uD488\uC811\uADFC \uACE0\uC99D \uBBF8\uC644\uC131";
       if (!initialStorage.ok) return showStorageReadUnavailable();
       if (!inspectForeignFundTag(state)) return showSaveConflict("\uD574\uC678 \uD380\uB4DC\uC9D1\uC911\uB3C4 \uC790\uB8CC\xB7\uADDC\uCE59 \uC2DD\uBCC4\uC774 \uB9DE\uC9C0 \uC54A\uC544 \uBA48\uCDC4\uC2B5\uB2C8\uB2E4. \uC6D0\uB798 \uC800\uC7A5\uC744 \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.", "foreign-fund-scale-shape");
@@ -1594,6 +1595,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
         }
       } catch (_) {
       }
+      sourceCommonHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({version:1,T:1e10,groups:localCommonGroups,policy:'l2-common-decision-v2'})+'\n'+[localCommonValues,localCommonAdd,localCommonApplySale,localCommonTrajectory,localCommonShape,monthlyChaosAdd,chaosTick,marketSizeOf,tryFillOrders,renderTrade,advanceMonth,choose,commitCareerBatch,commitDecisionPace,runSchoolProgress,localCommonSkipReview,localCommonDecisionCard,schoolProgressAvailable,careerBatchAllowed,decisionPaceAllowed].map(f=>f.toString()).join('\n')))),b=>b.toString(16).padStart(2,'0')).join('');
       currentRecordIdentity = { version: 1, ruleset: ReturnRecordContext.RULESET, rulesScope: "selected-engine-functions-v1", rulesHash, mode: CAREER_TRIAL ? "career-planning-trial" : SCHOOL_CASH_MODE ? "school-cash" : SCHOOL_MODE ? "school-main" : GAME_LIVING ? "game-living" : CASH_MODE ? "classic-cash" : "classic", economy: MODEL_ID, files: { ...recordDataHashes } };
       legacyIdentityFields = { economy: MODEL_ID, ruleset: ReturnRecordContext.RULESET, rulesHash };
       for (const s of PRESERVED_SETS) {
@@ -1691,6 +1693,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return "<details " + (open ? "open " : "") + 'class="career-schedule-note" style="padding:12px;border:1px solid #8c9b89;border-radius:8px;margin:12px 0;overflow-wrap:anywhere"><summary style="cursor:pointer">\uBCC4\uB3C4 \uC2DC\uC81C\uD488 \uADDC\uCE59 \xB7 \uCDE8\uC5C5\uC740 \uBD84\uAE30\uACC4\uD68D / \uC804\uC5C5\uC740 \uB274\uC2A4\uB300\uC751 \xB7 \uCDE8\uC18C\uAE08 \uC7AC\uC0AC\uC6A9 \uC2DC\uC810</summary><p>\uAE30\uC874 \uBCF8\uD3B8\xB7\uD074\uB798\uC2DD\xB7\uD604\uAE08\uC2DC\uD5D8\uC758 \uC5EC\uB35F \uC800\uC7A5\uD0A4\uB97C \uC77D\uC5B4 \uC62E\uAE30\uAC70\uB098 \uBC14\uAFB8\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uD604\uC2E4 \uC9C1\uC5C5\uBCC4 \uD22C\uC790\uB2A5\uB825\xB7\uC2DC\uAC04\uD45C\uB97C \uACE0\uC99D\uD55C \uADDC\uCE59\uC774 \uC544\uB2D9\uB2C8\uB2E4.</p><p>\uCDE8\uC5C5: \uD604\uC7AC \uC2DC\uD5D8 \uC21C\uC800\uCD95\uC744 \uBC1B\uACE0, \uBD84\uAE30 \uC815\uC0B0\uC5D0\uC11C \uC0C8 \uC218\uB3D9\uC8FC\uBB38\uACFC \uC55E\uC73C\uB85C\uC758 \uBC30\uBD84\uC744 \uC815\uD569\uB2C8\uB2E4. \uBD84\uAE30\uC911 \uB274\uC2A4\uB294 \uAC19\uC740 \uC790\uB8CC\uB97C \uC77D\uB418 \uC0C8 \uC8FC\uBB38\uC744 \uC811\uC218\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uBBF8\uCCB4\uACB0 \uCDE8\uC18C\xB7\uC55E\uC73C\uB85C\uC758 \uC801\uB9BD \uC911\uB2E8\xB7\uAE30\uC874 \uC6D0\uD654 \uC774\uC790\uB204\uC801 \uC0C1\uD488\uC758 \uD604\uAE08\uD68C\uC218\uB294 \uC5B8\uC81C\uB4E0 \uAC00\uB2A5\uD558\uBA70, \uBC18\uD658 \uD604\uAE08\uC740 \uC989\uC2DC \uC794\uACE0\uB85C \uB3CC\uC544\uC635\uB2C8\uB2E4. \uADF8 \uD604\uAE08\uC73C\uB85C \uC0C8 \uD22C\uC790\uC8FC\uBB38\uC744 \uB0B4\uB294 \uAC83\uC740 \uB2E4\uC74C \uBD84\uAE30 \uC815\uC0B0\uBD80\uD130\uC785\uB2C8\uB2E4. \uD604\uC7AC \uC815\uC0B0 \uD654\uBA74\uC774 \uC544\uC9C1 \uC5F4\uB824 \uC788\uB2E4\uBA74 \uADF8 \uD654\uBA74\uC5D0\uC11C \uB2E4\uC2DC \uC8FC\uBB38\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.</p><p>\uC804\uC5C5: \uC815\uAE30 \uC21C\uC800\uCD950\uC6D0 \uB300\uC2E0 \uB274\uC2A4\xB7\uD3C9\uC628\uD134\uC5D0\uC11C \uC8FC\uBB38\xB7\uC870\uAC74\xB7\uBD84\uD560\uC744 \uACE0\uB985\uB2C8\uB2E4. \uBA3C\uC800 \uC811\uC218\uD574\uB3C4 \uC2E4\uC81C \uC0C8 \uC801\uACA9\uAD00\uCE21\uC774 \uC5C6\uC73C\uBA74 \uCCB4\uACB0\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uAC19\uC740 \uC790\uB8CC\xB7\uAC00\uACA9\uC744 \uC4F0\uBA70 \uC218\uC775 \uBCF4\uB108\uC2A4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uC790\uB8CC\uACF5\uBC31\uC744 \uB354 \uB9CE\uC740 \uD074\uB9AD\uC774\uB098 \uAC00\uC0C1\uC2DC\uC138\uB85C \uCC44\uC6B0\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.</p><a href="./">\uAE30\uC874 \uBCF8\uD3B8\uC73C\uB85C \uB3CC\uC544\uAC00\uAE30 (\uC800\uC7A5 \uBCC4\uB3C4)</a></details>';
     }
     function careerBatchAllowed() {
+      if(localCommonActive()&&state.chaos>=70)return false;
       if (!(SCHOOL_MODE && !CASH_MODE) || state.flags.career !== "job") return false;
       if (!CAREER_TRIAL && state.batchRules !== 1) return false;
       const t = nextTurn();
@@ -1748,6 +1751,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       const from = state.month, rows = [], fillsBefore = (state.fillsLog || []).length, historyBefore = state.history.length;
       let steps = 0, reason = "\uACBD\uACC4";
       while (steps < 1e3) {
+        if(localCommonActive()&&state.chaos>=70){reason="카오스 경고 · 직접 판단";break;}
         if (propertyActive() && state.history.slice(historyBefore).some((h) => /^property-(buy|sell)-settled:/.test(h.choice || ""))) {
           reason = "\uC8FC\uD0DD \uACC4\uC57D \uC815\uC0B0";
           break;
@@ -1996,6 +2000,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
           const y = Number(by.value), m = Number(bm.value);
           const p = ReturnSchoolCalendar.startPlan(y, m);
           if (!p.ok) return;
+          state.commonChaos={version:1,policy:'l2-common-decision-v2',T:1e10,saleKRW:0,saleTicks:0};
           state.economyModel = ReturnEconomyPolicy.descriptor("career-cash-events-v1");
           state.foreignFundScale = { version: 1, dataId: FUND_SCALE_DATA_ID };
           state.foreignEtfRules = 1;
@@ -2035,7 +2040,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
           save();
           render();
         };
-        box.appendChild(goCC);
+        box.appendChild(goCC); localCommonStartControl(goCC);
       }
       box.appendChild(go);
       if (SCHOOL_MODE && !CASH_MODE && !CAREER_TRIAL) {
@@ -2118,6 +2123,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       if (state.assetTrail.length > 720) state.assetTrail = state.assetTrail.slice(-720);
     }
     function save() {
+      if(!localCommonShape())return showSaveConflict("후보 규칙·장부 불일치. 원 저장은 변경하지 않습니다.","common-source-shape");
       if (!foreignShapeOk(state)) return showSaveConflict("\uD574\uC678 ETF \uADDC\uCE59\xB7\uC790\uC0B0 \uD615\uC2DD\uC744 \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.", "foreign-shape");
       if (storageWriteBlocked) return showStorageWriteUnavailable();
       if (storageReadBlocked) return showStorageReadUnavailable();
@@ -4073,6 +4079,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return careerCycleActive() && state.decisionPaceRules === 1;
     }
     function decisionPaceAllowed() {
+      if(localCommonActive()&&state.chaos>=70)return false;
       return !reservationSettlementDue() && decisionPaceActive() && !militaryActive() && !state.flags.gameOver && state.month <= GAME_END && ["fulltime", "alba"].includes(careerCycleTrack()) && nextTurn().kind === "quiet";
     }
     function decisionPaceIdentity() {
@@ -4108,6 +4115,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       const from = state.month, unpaidBefore = careerCashUnpaid(), fillsBefore = (state.fillsLog || []).length, historyBefore = state.history.length;
       let steps = 0, reason = "\uD310\uB2E8 \uACBD\uACC4";
       while (steps < 500) {
+        if(localCommonActive()&&state.chaos>=70){reason="카오스 경고 · 직접 판단";break;}
         const t = nextTurn(), td = turnEffDate(t);
         effDate = td.date;
         effPostClose = td.postClose;
@@ -4403,6 +4411,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
     }
     let schoolProgressRunning = false, schoolProgressRenderedTurn = null;
     function schoolProgressAvailable(turn) {
+      if(localCommonActive()&&state.chaos>=70)return false;
       const b = state.flags?.birth;
       const highschool = b && state.month < b.hsYear + 3 + "-03" && ["study", "parttime"].includes(state.flags.studyPath);
       const college = state.flags.studyPath === "study" && state.flags.academicStatus === "college" && state.acadRules === 3 && ["focus", "balanced"].includes(state.colPolicy);
@@ -4416,6 +4425,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       if (surface) surface.inert = true;
       try {
         while (steps < 48) {
+          if(localCommonActive()&&state.chaos>=70){reason="카오스 경고 · 직접 판단";break;}
           if (storageReadBlocked || storageWriteBlocked || multiTabConflict) break;
           const turn = schoolProgressRenderedTurn;
           if (careerCashUnpaid() > beforeUnpaid) {
@@ -4568,6 +4578,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
         render();
         return;
       }
+      if (pending.step === "skip-preview" && localCommonActive()) {localCommonSkipReview();return;}
       if (pending.step === "skip-preview") {
         const savedState = state;
         const savedEffDate = effDate, savedEffPostClose = effPostClose;
@@ -4830,6 +4841,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
           }
           if (!isSell && GAME_LIVING && state.gameLivingTrack === "job") line += " \uCDE8\uC5C5 \uAC08\uB798 \uD22C\uC790 \uC0C1\uD55C [\uAC8C\uC784 \uADDC\uCE59]: \uAC8C\uC784 \uC720\uC785(\uC2DC\uC791 \uC790\uAE08+\uBC1B\uC740 \uC6D4\uAE09)\uC758 30%\uC5D0\uC11C \uC774\uBBF8 \uD22C\uC790\uD55C \uC6D0\uAC00\uC640 \uBBF8\uCCB4\uACB0 \uB9E4\uC218 \uC608\uC57D\uC744 \uBE80 \uB9CC\uD07C\uB9CC \uD22C\uC790\uD560 \uC218 \uC788\uC5B4 \uC774\uBC88\uC5D0 \uC6C0\uC9C1\uC77C \uC218 \uC788\uB294 \uC0C1\uD55C\uC740 " + base.toLocaleString() + "\uC6D0\uC785\uB2C8\uB2E4.";
           prev.textContent = line;
+          if(localCommonActive())localCommonPreview();
           go.disabled = Math.round(base * Number(slider.value) / 100) <= 0;
           if (go.disabled) go.textContent = "\uC6C0\uC9C1\uC77C \uAE08\uC561\uC774 \uC5C6\uC2B5\uB2C8\uB2E4";
           const valid = conditionInputValid(), num = document.getElementById("cond-val"), error = document.getElementById("condition-error");
@@ -5053,7 +5065,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
                 state.cash += proceeds;
                 const mSell = marketSizeOf(p.product, state.month);
                 if (mSell && mSell.size) {
-                  state.chaos = Math.round((state.chaos + proceeds / mSell.size * CHAOS.sellImpactFactor * chaosWeight(p.product)) * 10) / 10;
+                  state.chaos = localCommonActive()?localCommonApplySale(p.product,proceeds):Math.round((state.chaos + proceeds / mSell.size * CHAOS.sellImpactFactor * chaosWeight(p.product)) * 10) / 10;
                   if (state.chaos >= CHAOS.overAt) state.flags.gameOver = "chaos";
                 }
                 albaTimeConsume("sell");
@@ -5362,6 +5374,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
         const from = state.month;
         let k = 0, ks = 0, orderChanges = null;
         while (!state.flags.gameOver && state.month <= GAME_END) {
+          if(localCommonActive()&&state.chaos>=70)break;
           const t = nextTurn();
           if (t.kind !== "quiet") break;
           if (t.settlement) {
@@ -5410,8 +5423,111 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       save();
       render();
     }
+    let sourceCommonHash=null;
+// Private source-only candidate helpers. Ordinary tagged branches, not runtime reassignment.
+// T and grouping remain comparison assumptions; no public release selection.
+const localCommonGroups={kospi:'국내',kosdaq:'국내',etf:'국내',spy:'미국',usindex:'미국',fxi:'중국',btc:'BTC',fx:'달러',usdeposit:'달러',bundang:'주택',homeSeoul:'주택',homeGyeonggi:'주택'};
+const localCommonSafe=new Set(['deposit','bond']);
+const localCommonTs=[1e10]; // T100 is an unselected local comparison, not a release coefficient.
+function localCommonActive(){return Object.prototype.hasOwnProperty.call(state,'commonChaos');}
+function localCommonShape(){
+ if(!localCommonActive())return true;
+ const c=state.commonChaos;
+ return !!c&&Object.keys(c).sort().join(',')==='T,policy,saleKRW,saleTicks,version'&&c.version===1&&c.T===1e10&&c.policy==='l2-common-decision-v2'&&Number.isSafeInteger(c.saleKRW)&&c.saleKRW>=0&&Number.isSafeInteger(c.saleTicks)&&c.saleTicks===Math.round(c.saleKRW/c.T*10)&&state.economyModel?.id==='career-cash-events-v1'&&state.chaosExposureRules===1;
+}
+function localCommonValues(){
+ const buckets={};
+ const add=(p,value)=>{if(!(value>=0&&Number.isFinite(value)))throw Error('unpriced exposure');if(localCommonSafe.has(p))return;const g=localCommonGroups[p];if(!g&&value>0)throw Error('unknown exposure');if(g)buckets[g]=(buckets[g]||0)+value;};
+ for(const [p,h]of Object.entries(chaosExposureHoldings()))add(p,holdingValue(p,h,state.month));
+ if(propertyActive()){const snap=HomeContract.propertySnapshot(state.property,propertyPrices(propertyValuationMonth()));if(!snap.ok)throw Error('property exposure');if(snap.valuation>0)add('homeSeoul',snap.valuation);}
+ return buckets;
+}
+function localCommonAdd(values){return Math.hypot(...Object.values(values))/state.commonChaos.T;}
+function localCommonStep(c,add){return Math.round(Math.max(0,c+add-(add<1?2:0))*10)/10;}
+function localCommonSaleQuote(p,amount){if(localCommonSafe.has(p))return {raw:0,charged:0};if(!localCommonGroups[p])throw Error('unknown sale exposure');const c=state.commonChaos;return {raw:amount/c.T,charged:(Math.round((c.saleKRW+amount)/c.T*10)-c.saleTicks)/10};}
+function localCommonApplySale(p,amount){
+ if(!localCommonActive())throw Error('candidate sale on old run');
+ if(localCommonSafe.has(p))return state.chaos;
+ const quote=localCommonSaleQuote(p,amount);state.commonChaos.saleKRW+=amount;state.commonChaos.saleTicks=Math.round(state.commonChaos.saleKRW/state.commonChaos.T*10);
+ return Math.round((state.chaos+quote.charged)*10)/10;
+}
+function localCommonTrajectory(plan){
+ const values=localCommonValues(),c=state.commonChaos;
+ const sell=!!plan?.reduceProduct,buy=plan?.buyPerMonth>0;
+ const split=sell?Math.max(1,Number(document.getElementById('split-n')?.value||1)):(plan?.buyMonths||1);
+ const total=sell?(plan.reduceValue||0):(plan?.buyPerMonth||0)*split;
+ const group=localCommonGroups[sell?plan.reduceProduct:pending?.product];
+ let chaos=state.chaos,sold=c.saleKRW,charged=c.saleTicks;
+ const points=[{m:0,chaos}],out={points,warnMonth:chaos>=70?0:null,overMonth:chaos>=100?0:null};
+ for(let m=1;m<=12;m++){
+  if(group&&m<=split&&(sell||buy)){
+   const amount=m===split?total-Math.floor(total/split)*(split-1):Math.floor(total/split);
+   if(sell){values[group]=Math.max(0,(values[group]||0)-amount);sold+=amount;const ticks=Math.round(sold/c.T*10);chaos=Math.round((chaos+(ticks-charged)/10)*10)/10;charged=ticks;}
+   else values[group]=(values[group]||0)+amount;
+  }
+  const add=localCommonAdd(values);chaos=localCommonStep(chaos,add);points.push({m,chaos});if(out.warnMonth===null&&chaos>=70)out.warnMonth=m;if(out.overMonth===null&&chaos>=100)out.overMonth=m;
+ }
+ return out;
+}
+function localCommonPreview(){
+ if(!localCommonActive()||!pending?.product)return;
+ const el=document.getElementById('chaos-preview'),slider=document.getElementById('weight');
+ if(!el)return;
+ const liquidity=document.getElementById('order-liquidity-preview');
+ // The engine already computes exact order amount/quantity in this read-only preview.
+ const sell=pending.direction==='sell',percent=Number(document.querySelector('#turn-card input[type=range],#choices input[type=range]')?.value||50);
+ const amount=sell?Math.round(holdingValue(pending.product,state.holdings[pending.product],state.month)*percent/100):Number(liquidity?.dataset.amount||0);
+ const values=localCommonValues(),g=localCommonGroups[pending.product];
+ let text='[비공개 비교 후보] 공통 게임예산 T '+(state.commonChaos.T/1e8)+'억원. 실제 시장규모·유동성 아님. 지역 묶음은 후보 가정. ';
+ if(sell){const q=localCommonSaleQuote(pending.product,amount);text+='매도 원가산 '+q.raw.toFixed(8)+' · 전액 매도까지 누적장부 충격합계 +'+q.charged.toFixed(1)+' (작은 체결도 장부에 보존). ';if(g)values[g]=Math.max(0,(values[g]||0)-amount);}
+ else {if(g)values[g]=(values[g]||0)+amount;text+='주문 전 월가산 '+localCommonAdd(localCommonValues()).toFixed(8)+' → 전액 체결 가정 '+localCommonAdd(values).toFixed(8)+'. ';}
+ const split=Math.max(1,Number(document.getElementById('split-n')?.value||1));
+ const tr=localCommonTrajectory({sellImpactNow:sell?amount/state.commonChaos.T:0,reduceProduct:sell?pending.product:null,reduceValue:sell?amount:0,buyPerMonth:sell?0:amount/split,buyMonths:split});
+ text+='고정가격·월1회 '+split+'회 체결 가정 3/6/12개월 '+[3,6,12].map(m=>tr.points[m].chaos.toFixed(1)).join(' / ')+'. 미체결 매도는 실제 체결 전까지 보유노출 포함. 미래 체결가격·시점 예측 아님. 감소2·주의70·종료100 유지.';
+ el.textContent=text;el.dataset.commonMonthlyBefore=String(localCommonAdd(localCommonValues()));el.dataset.commonMonthlyAfter=String(localCommonAdd(values));el.dataset.commonAmount=String(amount);el.dataset.commonSaleRaw=String(sell?amount/state.commonChaos.T:0);
+}
+function localCommonPanel(){
+ if(!localCommonActive())return;
+ const portfolio=document.getElementById('portfolio');if(!portfolio)return;
+ for(const e of portfolio.querySelectorAll('.foreign-fund-scale-note'))e.remove();
+ for(const e of portfolio.querySelectorAll('.market-share'))e.textContent='[공통 게임예산 후보] 개별 시장점유율이 아닌 묶음 합산 부담. 아래 비교값 참고.';
+ let panel=document.getElementById('common-chaos-local');if(!panel){panel=document.createElement('section');panel.id='common-chaos-local';panel.style.cssText='padding:12px;border:2px solid #997440;border-radius:8px;margin:12px 0;overflow-wrap:anywhere';portfolio.prepend(panel);}
+ const values=localCommonValues(),add=localCommonAdd(values),c=state.commonChaos;
+ panel.dataset.monthlyAdd=String(add);panel.dataset.groups=JSON.stringify(values);panel.dataset.saleKRW=String(c.saleKRW);panel.dataset.saleTicks=String(c.saleTicks);
+ panel.textContent='개발판 · 보유 규모와 분산\nT '+c.T/1e8+'억원 [게임설계값] · 현재 카오스 '+state.chaos.toFixed(1)+'/100 · 월 게임가산 '+add.toFixed(8)+'\n묶음(후보 가정): '+Object.entries(values).map(([k,v])=>k+' '+Math.round(v).toLocaleString()+'원').join(' / ')+'\n매도 누적대금 '+c.saleKRW.toLocaleString()+'원 · 누적 충격 '+(c.saleTicks/10).toFixed(1)+' · 반올림 차이(음수=선반영) '+(c.saleKRW/c.T-c.saleTicks/10).toFixed(8)+'\n실제 시총·시장충격 아님. 같은 국내기초·달러·주택 이름분할 할인 없음. 현금·원화예금·채권 제외. .999/1 감소경계 유지.';
+ panel.style.whiteSpace='pre-line';
+ panel.style.display='none';
+ localCommonDecisionCard(values,add);
+}
+function localCommonSourceIdentity(base){return localCommonActive()?{...base,ruleset:'return-rules-local-source-l2-decision-v2',rulesHash:sourceCommonHash}:base;}
+function localCommonStartControl(start){
+ const label=document.createElement('p');label.className='note';label.textContent='개발판 신규회귀 · 공통 카오스 예산100억원. 보유 규모와 분산을 함께 반영하는 게임규칙입니다. 경고70에서 묶음진행이 멈춥니다. 기존 저장규칙은 바꾸지 않습니다.';const select=document.createElement('select');select.id='common-chaos-T';select.setAttribute('aria-label','비공개 비교T');const opt=document.createElement('option');opt.value='10000000000';opt.textContent='100억원 [개발 기준]';select.append(opt);label.append(select);start.before(label);
+}
+
+function localCommonSkipReview(){
+ const card=document.getElementById('turn-card'),box=document.getElementById('choices');box.replaceChildren();
+ const warning=state.chaos>=70;
+ card.innerHTML='<div class="date">'+esc(state.month)+' · 현재 보유 유지</div><h2>'+(warning?'경고 뒤에는 한 달씩 직접 판단합니다':'다음 판단 경계까지 기다릴까요')+'</h2><p>현재 진로·보유·주문을 유지하며 한 달씩 실제 진행합니다. 첫 뉴스·선택 경계 또는 카오스70에 도달하면 멈춥니다. 도착월·미래가격·미래 체결을 미리 계산해 보여주지 않습니다.</p><p>신규 주문·상환·자동매도는 하지 않습니다. 기존 예약과 생활비는 원래 규칙대로 반영됩니다. 경고에서 멈춰도 매도 체결이나 생존은 보장되지 않습니다.</p>';
+ if(!warning){const b=document.createElement('button');b.id='common-skip-confirm';b.textContent='현재 보유 유지 · 경계에서 멈추기';b.onclick=()=>{pending=null;choose('skip-to-news',null);};box.append(b);}
+ const back=document.createElement('button');back.id='common-skip-back';back.textContent=warning?'현재 달로 돌아가 대응 판단':'취소 · 현재 달 직접 판단';back.onclick=()=>{pending=null;render();};box.append(back);renderPortfolio();
+}
+function localCommonDecisionCard(values,add){
+ const names={domestic:'국내 주식·ETF',us:'미국 주식·ETF',china:'중국 주식·ETF',btc:'비트코인',BTC:'비트코인',usd:'달러',housing:'주택'};const label=g=>names[g]||g;
+ const area=document.getElementById('unlock-area');if(!area)return;let card=document.getElementById('common-chaos-decision');if(!card){card=document.createElement('section');card.id='common-chaos-decision';card.style.cssText='padding:16px;border:2px solid #9a6a2d;background:#fff8ec;border-radius:12px;margin:12px 0;color:#292624';area.append(card);}card.replaceChildren();
+ const h=document.createElement('h3');h.style.margin='0 0 8px';h.textContent=state.flags.gameOver?'이번 회귀의 부담 기록':state.chaos>=70?'카오스 경고 · 지금 선택할 때':'보유 규모와 분산';card.append(h);
+ const current=document.createElement('p'),next=localCommonStep(state.chaos,add);current.textContent='카오스 '+state.chaos.toFixed(1)+'/100 · 현재 평가 그대로 한 달을 보낸다면 '+next.toFixed(1)+' ('+(next-state.chaos>=0?'+':'')+(next-state.chaos).toFixed(1)+'). 실제 다음 달 가격이나 체결을 예측한 값은 아닙니다.';card.append(current);
+ const entries=Object.entries(values).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);const rows=document.createElement('ul');rows.style.paddingLeft='20px';for(const[g,v]of entries){const li=document.createElement('li');li.textContent=label(g)+' 묶음 '+Math.round(v).toLocaleString()+'원';rows.append(li);}if(entries.length)card.append(rows);
+ const detail=document.createElement('details');detail.id='common-chaos-options';const summary=document.createElement('summary');summary.textContent='그대로 두기·현금화·분산 차이 보기';summary.style.minHeight='44px';detail.append(summary);
+ const intro=document.createElement('p');intro.textContent='아래는 현재 평가금액을 고정한 읽기 전용 가정입니다. 누르거나 펼쳐도 월·돈·주문·저장은 바뀌지 않습니다. 실제 체결 전의 매도 잠금잔량은 계속 보유로 계산합니다.';detail.append(intro);
+ if(entries.length){const [group,value]=entries[0],amount=Math.floor(value/2),cashValues={...values,[group]:value-amount};const p=document.createElement('p');p.textContent='가장 큰 '+label(group)+' 묶음의 절반을 현금화한다면: 월가산 '+add.toFixed(3)+' → '+localCommonAdd(cashValues).toFixed(3)+'. 누적 매도장부 기준 즉시 충격은 '+((Math.round((state.commonChaos.saleKRW+amount)/state.commonChaos.T*10)-state.commonChaos.saleTicks)/10).toFixed(1)+'입니다(현재 평가 절반 전액체결 가정). 현금은 보유부담에서 제외되지만 매도 즉시 과거 카오스가 사라지지는 않습니다.';detail.append(p);
+ const other=entries.find(([g])=>g!==group);if(other){const spread={...cashValues,[other[0]]:(cashValues[other[0]]||0)+amount},q=document.createElement('p');q.textContent='같은 금액을 현재 보유 중인 '+label(other[0])+' 묶음으로 옮긴 가정: 총 위험보유액은 같고 월가산 '+localCommonAdd(spread).toFixed(3)+'. 다른 묶음이라도 한쪽이 커지면 개선되지 않을 수 있습니다. 실제 매도충격·가격차·수수료·체결 대기는 이 비교에 넣지 않았습니다.';detail.append(q);}}
+ const note=document.createElement('p');note.textContent='같은 국내기초·달러·주택 묶음 안에서 상품 이름만 나누면 분산으로 보지 않습니다. 원화현금·원화예금·채권은 제외합니다. 월가산이1 미만이면 감소2를 적용하고,1 이상이면 적용하지 않습니다. 70은 경고,100은 종료인 게임설계값입니다.';detail.append(note);card.append(detail);
+ if(state.chaos>=70&&!state.flags.gameOver){const p=document.createElement('p');p.setAttribute('role','status');p.textContent='여러 달 묶음진행은 여기서 멈춥니다. 현재 달의 기존 주문/보유 화면에서 직접 대응하거나 한 번의 유지 선택으로 계속할 수 있습니다. 자동 매도나 강제 분산은 하지 않습니다.';card.append(p);}
+}
+
     const MARKET_SIZE_PLAY = [];
     function marketSizeOf(p, month) {
+      if(localCommonActive()){if(localCommonSafe.has(p))return null;return localCommonGroups[p]?{size:state.commonChaos.T*100,label:"공통 게임예산 후보 · 실제 시장규모 아님"}:{size:null,label:"노출 미산정"};}
       if (foreignFundScaleActive() && ["spy", "fxi"].includes(p)) return foreignFundScaleMarket(p, month);
       if (p === "kospi" || p === "kosdaq") {
         const cutoff = month === state.month ? effDate : month + "-31";
@@ -5478,6 +5594,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return exposure;
     }
     function monthlyChaosAdd() {
+      if(localCommonActive())return localCommonAdd(localCommonValues());
       if (!chaosExposureActive()) return legacyMonthlyChaosAdd();
       let add = 0;
       for (const [p, h] of Object.entries(chaosExposureHoldings())) {
@@ -5488,12 +5605,14 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return add;
     }
     function chaosTick() {
+      if(localCommonActive()){state.chaos=localCommonStep(state.chaos,monthlyChaosAdd());return;}
       const add = monthlyChaosAdd() + propertyChaosAdd();
       let next = state.chaos + add;
       if (add < 1) next -= CHAOS.decayPerMonth;
       state.chaos = Math.round(Math.max(0, next) * 10) / 10;
     }
     function chaosTrajectory(plan) {
+      if(localCommonActive())return localCommonTrajectory(plan);
       const vals = [];
       for (const [p, h] of Object.entries(chaosExposureHoldings())) {
         const m = marketSizeOf(p, state.month);
@@ -6099,7 +6218,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
           state.cash += proceeds;
           const mSell = marketSizeOf(o.product, state.month);
           if (mSell && mSell.size) {
-            state.chaos = Math.round((state.chaos + proceeds / mSell.size * CHAOS.sellImpactFactor * chaosWeight(o.product)) * 10) / 10;
+            state.chaos = localCommonActive()?localCommonApplySale(o.product,proceeds):Math.round((state.chaos + proceeds / mSell.size * CHAOS.sellImpactFactor * chaosWeight(o.product)) * 10) / 10;
             if (state.chaos >= CHAOS.overAt) state.flags.gameOver = "chaos";
           }
           fills.push({ kind: "sell-fill", ...o.condition ? { conditional: true, conditionOp: o.condition.op, conditionValue: o.condition.value } : {}, basePtDate: o.basePtDate || null, basePtValue, product: o.product, proceeds, costBasis: fillCostBasis, pnl: proceeds - fillCostBasis, price: unitPrice, ptDate: pt.date, month: state.month, obsCutoff: o.obsCutoff || null, usableFrom: pt.usable_from || null, fxPtDate, ...o.split && o.split.n > 1 ? { splitPart: (o.split.filled || 0) + 1, splitN: o.split.n } : {} });
@@ -6531,7 +6650,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
         if (!x.ok) return showSaveConflict("\uC8FC\uD0DD \uACC4\uC57D \uC815\uC0B0\uC744 \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.", "property-settlement");
         state.cash = x.cash;
         state.property = x.property;
-        for (const r of x.receipts) state.history.push({ month: state.month, decisionMonth: state.month, choice: "property-" + r.kind + "-settled:" + r.region, ...r });
+        for (const r of x.receipts){if(localCommonActive()&&r.kind==="sell"){state.chaos=localCommonApplySale("homeSeoul",r.price);if(state.chaos>=100)state.flags.gameOver="chaos";}state.history.push({ month: state.month, decisionMonth: state.month, choice: "property-" + r.kind + "-settled:" + r.region, ...r });}
       }
       if (GAME_LIVING) {
         const entered = state.month, workMonth = addMonths(entered, -1);
@@ -7026,7 +7145,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return state.foreignFundScale?.version === 1 && state.foreignFundScale.dataId === FUND_SCALE_DATA_ID;
     }
     function foreignFundScaleIdentity() {
-      return state.cashReservePolicy ? foreignFundScaleReserveIdentityFields : foreignFundScaleIdentityFields;
+      return localCommonSourceIdentity(state.cashReservePolicy ? foreignFundScaleReserveIdentityFields : foreignFundScaleIdentityFields);
     }
     function foreignFundScaleCutoff(month) {
       if (month === state.month) return effDate;
@@ -7069,6 +7188,7 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       return !tag && !has || tag && has && s.propertyRules === 1 && s.cashAllocationRules === 1 && s.chaosExposureRules === 1 && chaosExposureShapeOk(s) && HomeContract.inspectProperty(s.property) && Object.values(s.property.holdings).every((h) => h.acquiredMonth <= s.month) && s.property.contracts.every((c) => c.placedMonth <= s.month);
     }
     function propertyChaosAdd() {
+      if(localCommonActive())return 0;
       if (!propertyActive()) return 0;
       const snap = HomeContract.propertySnapshot(state.property, propertyPrices(propertyValuationMonth()));
       return snap.ok ? snap.valuation / 2e13 * 100 : 0;
@@ -7128,6 +7248,8 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       no.textContent = "\uACC4\uC57D\uD558\uC9C0 \uC54A\uACE0 \uB3CC\uC544\uAC00\uAE30";
       no.onclick = () => render();
       box.append(yes, no);
+    
+      if(localCommonActive()){const price=c.price,values=localCommonValues();values['주택']=Math.max(0,(values['주택']||0)+(kind==='buy'?price:-price));const note=document.createElement('p');note.id='common-property-preview';note.className='note';note.textContent='[비공개 공통예산 후보] 현재 월가산 '+monthlyChaosAdd().toFixed(8)+' → 정산후 가정 '+localCommonAdd(values).toFixed(8)+'. '+(kind==='sell'?'계약가격 매도 원가산 '+(price/state.commonChaos.T).toFixed(8)+' · 누적충격합계 +'+localCommonSaleQuote('homeSeoul',price).charged.toFixed(1):'매수잠금현금 정산전 노출제외.')+' 매도정산전 소유노출 유지. 지역묶음은 후보가정.';card.append(note);}
     }
     function renderPropertyCancel(id) {
       const c = state.property?.contracts.find((x) => x.id === id && x.status === "pending");
@@ -7310,6 +7432,8 @@ import { PROPERTY_PRICE_MODEL, propertyPrices, estimatedPropertyPrice } from "./
       if (ve) ve.onclick = () => renderVoluntaryEndConfirm();
       const lsOpen = document.getElementById("living-scenario-open");
       if (lsOpen) lsOpen.onclick = () => renderLivingScenario();
+    
+      localCommonPanel();
     }
     function renderVoluntaryEndConfirm() {
       if (storageReadBlocked || storageWriteBlocked) return;

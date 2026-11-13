@@ -13,6 +13,11 @@ async function boot() {
   createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
 }
 async function beginWithGameLease() {
+ // Legacy engine bytes and all data generations stay immutable in ./legacy/.
+ // Route before reading a game state into a new source engine. Never add a tag to an old save.
+ // Imported slots are validated and read by browser-storage and createSaveStore before decoded routing. No slot pointer is written here.
+ if(new URLSearchParams(location.search).has('start')||new URLSearchParams(location.search).has('economy')){location.replace('./legacy.html'+location.search);return;}
+
   if (!navigator.locks?.request) {
     if (window.localStorage.getItem('return-storage-slot.v1') !== null) throw Error('이 브라우저에서는 가져온 저장 공간을 안전하게 열 수 없습니다. 저장은 바꾸지 않았습니다. 안전 잠금을 지원하는 브라우저에서 열어 주세요.');
     window.__returnGameLeaseActive = true;

@@ -13,7 +13,7 @@
     const heading = card?.querySelector('h2');
     if (!heading || !document.querySelector('#choices > button:not(:disabled)')) return;
     const chapter = document.getElementById('vn-first-chapter');
-    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다', '이 대기 주문만 취소할까', '이 매수 예약금 일부만 풀기', '남은 주문의 가격조건 바꾸기', '이 남은 주문만 바꿀까', '남은 주문의 기한만 바꿀까', '한 상품에 모을까, 두 상품에 나눌까', '기존 적립 예약금을 현금으로 돌릴까', '투자 전에 현금을 얼마나 남길까', '수입을 다시 쌓을까, 투자 시간을 확보할까'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
+    const result = !['상품 선택', '비중 결정', '여기까지 진행됩니다', '이 대기 주문만 취소할까', '이 매수 예약금 일부만 풀기', '서울 대표 주택 한 채 매수', '서울 대표 주택 한 채 매도', '경기 대표 주택 한 채 매수', '경기 대표 주택 한 채 매도', '주택 게임 계약을 취소할까요?', '남은 주문의 가격조건 바꾸기', '이 남은 주문만 바꿀까', '남은 주문의 기한만 바꿀까', '한 상품에 모을까, 두 상품에 나눌까', '기존 적립 예약금을 현금으로 돌릴까', '투자 전에 현금을 얼마나 남길까', '수입을 다시 쌓을까, 투자 시간을 확보할까'].includes(heading.textContent) && document.querySelector('#unlock-area .unlock-banner');
     const target = chapter || result || heading;
     target.setAttribute('tabindex', '-1');
     target.focus({ preventScroll: true });
@@ -43,11 +43,12 @@
     const ordinaryChoice = button.parentElement?.id === 'choices' && (firstCareer || /^(유지|다음 달로 진입|건너뛰기|다음 뉴스까지 건너뛰기)/.test(button.textContent) || (skipPreview && /^(\d+개월 건너뛰기 실행|취소 \(돌아가기\))$/.test(button.textContent)));
     const positionTransition = button.parentElement?.id === 'choices' && (['상품 선택', '비중 결정'].includes(document.querySelector('#turn-card h2')?.textContent) || ['리밸런싱 (비중 조정)', '이 뉴스에 대응해 포지션 조정'].includes(button.textContent));
     const cancellationTransition = button.classList.contains('single-order-cancel-open') || ['single-order-cancel-back', 'single-order-cancel-confirm', 'job-reservations-cancel-open', 'job-reservations-cancel-back', 'job-reservations-cancel-confirm'].includes(button.id);
+    const propertyTransition = button.hasAttribute('data-property-region') || button.hasAttribute('data-property-cancel') || ['property-contract-confirm', 'property-cancel-confirm'].includes(button.id) || (button.parentElement?.id === 'choices' && /^(계약하지 않고 돌아가기|계약 유지)$/.test(button.textContent));
     const reductionTransition = button.classList.contains('order-reduce-open') || button.classList.contains('order-reduce-percent') || ['order-reduce-confirm', 'order-reduce-edit', 'order-reduce-back'].includes(button.id);
     const orderEditTransition = button.classList.contains('order-condition-open') || button.classList.contains('order-deadline-open') || ['order-condition-review', 'order-condition-back', 'order-condition-confirm', 'order-condition-edit', 'order-condition-confirm-back', 'order-deadline-back'].includes(button.id) || (button.parentElement?.id === 'choices' && button.hasAttribute('data-deadline-months'));
     const planTransition = ['job-plan-open', 'career-plan-shortcut', 'cash-allocation-confirm', 'cash-allocation-edit', 'cash-allocation-back', 'cash-reserve-open', 'cash-reserve-confirm', 'cash-reserve-review-back', 'cash-reserve-back', 'career-cycle-open', 'career-cycle-confirm', 'career-cycle-review-back', 'career-cycle-back'].includes(button.id) || (button.parentElement?.id === 'choices' && (button.hasAttribute('data-plan-percent') || button.hasAttribute('data-reserve-target') || button.hasAttribute('data-career-cycle')));
     const start = button.id === 'cash-main-start';
-    if (!start && !ordinaryChoice && !chapterControl && !positionTransition && !cancellationTransition && !reductionTransition && !orderEditTransition && !planTransition) return;
+    if (!start && !ordinaryChoice && !chapterControl && !positionTransition && !cancellationTransition && !propertyTransition && !reductionTransition && !orderEditTransition && !planTransition) return;
     const previousKey = readingKey();
     requestAnimationFrame(function () {
       if (document.getElementById('by') || window.__returnStorageHalted || document.querySelector('.storage-failure, .confirm-overlay') || document.querySelector('main')?.inert) return;

@@ -302,3 +302,45 @@
   new MutationObserver(indexNotice).observe(document.documentElement, {childList: true, subtree: true});
   indexNotice();
 })();
+
+(function () {
+  'use strict';
+  // Display protection only. Read the engine's rendered scope, never storage or rules.
+  const scope = '전체 위험 미산정: 분모가 확인되지 않은 보유·매도잠금 노출이 있습니다. 아래 수치는 알려진 부분만 계산하며, 0이나 감소 표시는 안전을 뜻하지 않습니다.';
+  const noSafeClaim = text => text.replace(/12개월 가정 내 주의\s*70\s*미도달/g, '전체 위험의 주의·한계 도달 여부는 미산정');
+  function protectChaosScope() {
+    const unknown = Array.from(document.querySelectorAll('.market-share')).some(row => row.textContent.includes('산정 불가'));
+    const rows = Array.from(document.querySelectorAll('.row'));
+    const chaos = rows.find(row => row.firstElementChild?.textContent === '카오스' || row.firstElementChild?.textContent === '카오스 [알려진 부분]');
+    if (unknown && chaos) {
+      if (chaos.firstElementChild.textContent !== '카오스 [알려진 부분]') chaos.firstElementChild.textContent = '카오스 [알려진 부분]';
+      if (!document.getElementById('chaos-incomplete-scope')) {
+        const note = document.createElement('p');
+        note.id = 'chaos-incomplete-scope';
+        note.className = 'note';
+        note.style.cssText = 'padding:10px;border-left:3px solid #9b6136;background:#fff8ef;overflow-wrap:anywhere;';
+        note.textContent = scope;
+        chaos.before(note);
+      }
+      const trajectory = rows.find(row => row.firstElementChild?.textContent.startsWith('보유 유지 시 궤적'));
+      if (trajectory) {
+        const label = '보유 유지 시 궤적 [알려진 부분만]';
+        if (trajectory.firstElementChild.textContent !== label) trajectory.firstElementChild.textContent = label;
+        const value = trajectory.lastElementChild;
+        const revised = noSafeClaim(value.textContent);
+        if (value.textContent !== revised) value.textContent = revised;
+      }
+    }
+    const preview = document.getElementById('chaos-preview');
+    if (preview) {
+      const missingOrder = /산정 (보류|불가)/.test(preview.textContent);
+      if (unknown || missingOrder) {
+        const prefix = '전체 위험 미산정 · 알려진 부분만 계산. ';
+        const revised = (preview.textContent.startsWith(prefix) ? '' : prefix) + noSafeClaim(preview.textContent);
+        if (preview.textContent !== revised) preview.textContent = revised;
+      }
+    }
+  }
+  new MutationObserver(protectChaosScope).observe(document.documentElement, {childList: true, subtree: true, characterData: true});
+  protectChaosScope();
+})();

@@ -24,3 +24,8 @@ assert.equal(createHash('sha256').update(await readFile(new URL('./2-casual.js',
 
 const profilePin=(await readFile(new URL('./profile-engine-sha256.txt',import.meta.url),'utf8')).trim();
 assert.equal(createHash('sha256').update(await readFile(new URL('./3-casual.js',import.meta.url))).digest('hex'),profilePin,'Profile edition is pinned separately. Preserve existing edition before future engine changes.');
+
+const allocationPin=(await readFile(new URL('./allocation-engine-sha256.txt',import.meta.url),'utf8')).trim();
+assert.equal(createHash('sha256').update(await readFile(new URL('./4-casual.js',import.meta.url))).digest('hex'),allocationPin,'Instant allocation engine is pinned separately.');
+assert.ok(router.includes('return-casual.v3.')&&router.includes('4-casual.js'));
+assert.ok(!(await readFile(new URL('./4-casual.js',import.meta.url),'utf8')).includes('__allocationTest'),'Never ship test fixture access');

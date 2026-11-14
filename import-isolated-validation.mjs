@@ -1,7 +1,7 @@
 // No persistent storage access. The opaque frame can only read its own supplied map.
 export async function validateEngineInIsolation({activeSaveRaw,completedLivesRaw,payloadGzip,engineCode,timeoutMs=12000}) {
  if (typeof activeSaveRaw !== 'string') throw Error('active-required-for-first-import');
- const frame=document.createElement('iframe');frame.hidden=true;frame.setAttribute('sandbox','allow-scripts');
+ const frame=document.createElement('iframe');frame.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:0;top:0";frame.setAttribute("aria-hidden","true");frame.setAttribute('sandbox','allow-scripts');
  const nonce=crypto.randomUUID();
  const bootstrap=String.raw`
  const seedNonce = NONCE;

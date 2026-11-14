@@ -2,10 +2,11 @@ import * as esbuild from 'esbuild';
 import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-const allocationBuild=process.env.RETURN_ALLOCATION_BUILD==='1';
+const clearingBuild=process.env.RETURN_CLEARING_BUILD==='1';
+const allocationBuild=process.env.RETURN_ALLOCATION_BUILD==='1'||clearingBuild;
 const profileBuild=process.env.RETURN_PROFILE_BUILD==='1'||allocationBuild;
-const allocationPlan=await readFile('allocation-plan.mjs','utf8');
-const allocationHook=await readFile('allocation-engine-hook.js','utf8');
+const allocationPlan=await readFile(clearingBuild?'clearing-plan.mjs':'allocation-plan.mjs','utf8');
+const allocationHook=await readFile(clearingBuild?'clearing-engine-hook.js':'allocation-engine-hook.js','utf8');
 const allocationId=createHash('sha256').update(allocationPlan+'\n'+allocationHook.split('// Presentation-only code below.')[0]).digest('hex');
 const profilePlan=await readFile('profile-plan.mjs','utf8');
 const profileHook=await readFile('profile-engine-hook.js','utf8');
@@ -16,11 +17,13 @@ const oldBuild=await readFile('45-build-pages.mjs','utf8');
 const files=JSON.parse(oldBuild.match(/const files=(\{[^;]+\});/)[1]);
 const assets=Object.fromEntries(Object.entries(files).filter(([k])=>k.endsWith('.png')));
 const hook=await readFile('casual-view-hook.js','utf8');
-await esbuild.build({entryPoints:['casual-engine-entry.jsx'],bundle:true,outfile:allocationBuild?'4-casual.js':profileBuild?'3-casual.js':'2-casual.js',format:'iife',target:['es2022'],minify:true,legalComments:'inline',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'casual-from-classic',setup(build){
+await esbuild.build({entryPoints:['casual-engine-entry.jsx'],bundle:true,outfile:clearingBuild?'5-casual.js':allocationBuild?'4-casual.js':profileBuild?'3-casual.js':'2-casual.js',format:'iife',target:['es2022'],minify:true,legalComments:'inline',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'casual-from-classic',setup(build){
  build.onResolve({filter:/.*/},args=>{if(!args.path.startsWith('.')&&!files[args.path]&&args.kind!=='entry-point')return;let raw=args.path.endsWith('?raw'),k=path.basename(args.path.replace(/\?raw$/,''));if(!files[k])for(const ext of ['.jsx','.js','.mjs'])if(files[k+ext]){k+=ext;break;}if(files[k])return {path:path.resolve(files[k]),namespace:raw?'raw-text':'file'};});
  build.onLoad({filter:/.*/,namespace:'raw-text'},async args=>({contents:'export default '+JSON.stringify(await readFile(args.path,'utf8')),loader:'js'}));
  build.onLoad({filter:/\.(jsx?|mjs)$/},async args=>{if(args.path.includes('node_modules'))return;let text=await readFile(args.path,'utf8');for(const[k,v]of Object.entries(assets))text=text.split(k).join(v);
  text=text.replace('fetch("game-data.json.gz")','fetch("'+files['game-data.json.gz']+'")');
+ if(clearingBuild&&args.path.endsWith('11-App.jsx'))text=text.replace('const MAX_PARTS = 6;','const MAX_PARTS = 64;').replace('const TOTAL_BUDGET = 64500;','const TOTAL_BUDGET = 1048576;');
+ if(clearingBuild&&args.path.endsWith('11-App.jsx'))text=text.replace('const boot = await ss.loadBoot();',`try { for(const g of ['a','b']) { const idx=JSON.parse(store.get(STORE_KEYS.genIdx(g))||'null');if(idx&&Number.isInteger(idx.parts)&&idx.parts>6&&idx.parts<=MAX_PARTS)for(let i=6;i<idx.parts;i++){const k=STORE_KEYS.genPart(g,i),r=await browserPersistence.request('local.read',{key:k});if(!r||r.status!=='saved')throw Error('extended-save-read-unconfirmed');const v=r.value===null?null:JSON.parse(r.value);if(v!==null)map.set(k,v);} } }catch(e){setBootFailure('추가 저장 조각을 확인하지 못해 시작하지 않았습니다. 원본은 지우지 않았습니다. '+String(e));return;}const boot = await ss.loadBoot();`);
  if(args.path.endsWith('22-main.jsx')){
    text='window.__returnAssetPaths='+JSON.stringify(assets)+';\n'+text;
    text=text.replaceAll("'return-game-session-v1'",allocationBuild?"'return-game-session-casual-v3'":profileBuild?"'return-game-session-casual-v2'":"'return-game-session-casual-v1'");
@@ -39,7 +42,8 @@ await esbuild.build({entryPoints:['casual-engine-entry.jsx'],bundle:true,outfile
   const tail='    boot();\n  })();\n})();';
   if(!text.endsWith(tail+'\n')&&!text.endsWith(tail))throw Error('engine hook boundary changed');
   if(profileBuild){
-   if(allocationBuild)text='import * as Allocation from \"./allocation-plan.mjs\";\n'+text;
+   if(clearingBuild)text='import * as ClearingCodec from \"./26-save-codec.mjs\"; import {browserPersistence as ClearingStorage} from \"./15-browser-storage.js\";\n'+text;
+   if(allocationBuild)text='import * as Allocation from \"./'+(clearingBuild?'clearing-plan.mjs':'allocation-plan.mjs')+'\";\n'+text;
    text='import * as Profile from \"./profile-plan.mjs\";\n'+text;
    text=text.replaceAll('birthYear < 1975','birthYear < 1900');
    text=text.replace('...SCHOOL_MODE ? { schoolStart: { ...state.schoolStart }, birth: { ...state.flags.birth } } : {},','...SCHOOL_MODE ? { schoolStart: { ...state.schoolStart }, birth: { ...state.flags.birth }, startProfile: structuredClone(state.startProfile) } : {},');

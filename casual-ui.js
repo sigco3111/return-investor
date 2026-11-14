@@ -214,7 +214,7 @@ function render(){
   shell();const card=$('#turn-card');if(!card)return;
   const signature=card.innerHTML;if(card.__cContent!==signature){delete card.dataset.cDone;}
   let v=null;try{v=window.__returnCasualRead?.();}catch{const d=$('#casual-dashboard');if(d){d.innerHTML='<p class="c-warning">자산 현황을 확인하지 못했습니다. 앞서 표시한 금액은 사용하지 않습니다. 저장을 바꾸지 말고 다시 열어 확인하세요.</p>';delete d.dataset.signature;}}
-  if(v?.blocked){mode='play';const d=$('#casual-dashboard');if(d){d.innerHTML='<p class="c-warning">저장·현황 확인이 중단되어 금액을 표시하지 않습니다. 아래 오류 안내를 확인하세요.</p>';delete d.dataset.signature;}v=null;}
+  if(v?.blocked){receiptText='';receiptState=null;$('#casual-receipt')?.remove();$('#unlock-area')?.replaceChildren();mode='play';const d=$('#casual-dashboard');if(d){d.innerHTML='<p class="c-warning">저장·현황 확인이 중단되어 금액을 표시하지 않습니다. 아래 오류 안내를 확인하세요.</p>';delete d.dataset.signature;}v=null;}
   if(v){const title=card.querySelector('h2')?.textContent||'생년월을 고르세요';refreshDashboard(v,title);compactCard(v);groupChoices(v);decorateButtons();}
   // Optional story lines and detailed chaos assumptions stay available without
   // placing a second long card ahead of the player's next decision.

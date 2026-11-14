@@ -7,7 +7,7 @@ for(const [file,expected]of Object.entries(preserved)){
  assert.equal(got,expected,'Classic baseline must stay byte-for-byte: '+file);
 }
 const index=await readFile(new URL('./index.html',import.meta.url),'utf8');
-assert.ok(index.includes('href="advanced.html"')&&index.includes('href="casual.html"'));
+assert.ok(!index.includes('href="advanced.html"')&&index.includes('href="casual.html"'));
 assert.ok(!/localStorage|sessionStorage/.test(index),'Mode selection never reads or writes saves');
 const html=await readFile(new URL('./casual.html',import.meta.url),'utf8');
 assert.ok(html.includes('casual-edition.js'));
@@ -27,5 +27,7 @@ assert.equal(createHash('sha256').update(await readFile(new URL('./3-casual.js',
 
 const allocationPin=(await readFile(new URL('./allocation-engine-sha256.txt',import.meta.url),'utf8')).trim();
 assert.equal(createHash('sha256').update(await readFile(new URL('./4-casual.js',import.meta.url))).digest('hex'),allocationPin,'Instant allocation engine is pinned separately.');
-assert.ok(router.includes('return-casual.v3.')&&router.includes('4-casual.js'));
+assert.ok(router.includes('return-casual.v3.')&&router.includes('5-casual.js'));
 assert.ok(!(await readFile(new URL('./4-casual.js',import.meta.url),'utf8')).includes('__allocationTest'),'Never ship test fixture access');
+
+const clearingPin=(await readFile(new URL('./clearing-engine-sha256.txt',import.meta.url),'utf8')).trim();assert.equal(createHash('sha256').update(await readFile(new URL('./5-casual.js',import.meta.url))).digest('hex'),clearingPin);

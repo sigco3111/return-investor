@@ -175,7 +175,7 @@ function decorateButtons(){
 }
 function shell(){
  const main=$('main');if(!main||$('#casual-topbar'))return;
- const top=el('div','c-topbar');top.id='casual-topbar';top.innerHTML='<a href="./">‹ 모드 선택</a><span>리턴: 회귀 투자자</span><a href="advanced.html">어드밴스</a>';main.prepend(top);
+ const top=el('div','c-topbar');top.id='casual-topbar';top.innerHTML='<a href="./">‹ 처음 화면</a><span>리턴: 회귀 투자자</span>';main.prepend(top);
  const h=$('header');if(h)h.classList.add('c-original-header');
  const pf=$('#portfolio');if(pf){const toggle=el('button','c-portfolio-close','자금 관리 닫기');toggle.id='casual-portfolio-close';toggle.type='button';toggle.onclick=()=>{mode='play';render();$('#casual-dashboard')?.scrollIntoView({block:'start'});};pf.before(toggle);pf.hidden=true;toggle.hidden=true;}
  const record=$('#record-copy');if(record){
@@ -185,7 +185,7 @@ function shell(){
    $('#casual-open-history').onclick=()=>{mode='play';$('#dash-link')?.click();focusNext=true;schedule();};
    $('#casual-end-life').onclick=()=>{mode='play';$('#voluntary-end-open')?.click();focusNext=true;schedule();};
    $('#casual-close-menu').onclick=()=>{mode='play';render();$('#turn-card')?.scrollIntoView({block:'start'});};
-const notice=el('p','c-core-note','캐주얼 전용 사본입니다. 클래식 가져오기는 별도 공간을 사용하므로 이 사본을 자동 연결하지 않습니다.');record.querySelector('summary')?.after(notice);}
+const notice=el('p','c-core-note','이 브라우저의 회귀 기록입니다. 이전 저장 원본은 지우지 않습니다.');record.querySelector('summary')?.after(notice);}
 }
 let capitalGroup='assets';
 function compactCapital(){
@@ -208,10 +208,33 @@ function compactCapital(){
  for(const review of pf.querySelectorAll('.cash-events-review')){const d=disclosure(review,'현금사건 규칙 전체 보기');for(const n of [...review.children])if(n.tagName==='P'&&n!==d)d.append(n);}
  for(const property of pf.querySelectorAll('.property-panel')){const d=disclosure(property,'가격·계약 규칙 자세히');for(const n of [...property.children])if(n.tagName==='P')d.append(n);}
 }
+function openRepayment(){
+ const cancel=$('#allocation-cancel');if(cancel)cancel.click();
+ mode='capital';capitalGroup='cash';render();$('.c-capital-nav [data-group="cash"]')?.click();
+ requestAnimationFrame(()=>{const target=$('.career-repayment-preview')||$('.cash-events-review');target?.scrollIntoView({block:'start'});const b=$('#career-cash-repay');if(b){b.tabIndex=0;b.focus({preventScroll:true});}});
+}
+function repaymentAccess(v){
+ if(!v||v.blocked||v.unpaid<=0)return;
+ const add=(parent,id,label)=>{if(!parent||$('#'+id))return;const b=el('button','c-repayment-access',label);b.id=id;b.type='button';b.onclick=openRepayment;parent.append(b);};
+ add($('#casual-dashboard'),'casual-repay-shortcut','미납 '+won(v.unpaid)+' 확인·상환');
+ const panel=$('#allocation-panel');if(panel&&!window.__returnClearing){
+  let n=$('#allocation-unpaid-help');if(!n){n=el('p','c-warning','미납이 있어 새 매수는 막혀 있습니다. 보유 비중을 줄이는 매도·해지만 가능합니다. 확정은 투자 판단1회를 쓰며, 이어지는 월의 생활비가 매도대금에서 먼저 빠질 수 있습니다. 상환은 현재 현금으로 별도 확인합니다.');n.id='allocation-unpaid-help';panel.prepend(n);}
+  add(n,'allocation-repay-shortcut','배분을 취소하고 미납 확인·상환');
+ }
+ const preview=$('.career-repayment-preview');if(preview){
+  const text=preview.textContent,none='지금은 납부 가능한 청구가 없습니다';
+  if(text.includes(none)){
+   const message=v.cash<=0?'미납 '+won(v.unpaid)+'이 있지만 지금 쓸 수 있는 현금이 없습니다.':'미납 '+won(v.unpaid)+'이 남아 있습니다. 현금 '+won(v.cash)+'으로는 가장 오래된 달의 남은 청구 전액을 낼 수 없습니다.';
+   const walk=document.createTreeWalker(preview,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode())if(n.nodeValue.includes(none))n.nodeValue=n.nodeValue.replace(none,message);
+  }
+  const b=$('#career-cash-repay');if(b&&text.includes(none)){b.disabled=true;b.textContent='현금 부족 · 지금 상환할 수 없음';}
+ }
+}
 function render(){
  if(!$('main'))return;observer?.disconnect();
  try{
   shell();const card=$('#turn-card');if(!card)return;
+  if($('#clearing-continue')){mode='play';for(const e of $$('#casual-dashboard,#vn-stage,#unlock-area,#portfolio,#casual-portfolio-close,#casual-choice-categories,#casual-story,#casual-risk,#casual-receipt,#casual-record-menu,#record-copy,.asset-license,#footnote'))e.hidden=true;card.hidden=false;$('#choices').hidden=false;return;}
   const signature=card.innerHTML;if(card.__cContent!==signature){delete card.dataset.cDone;}
   let v=null;try{v=window.__returnCasualRead?.();}catch{const d=$('#casual-dashboard');if(d){d.innerHTML='<p class="c-warning">자산 현황을 확인하지 못했습니다. 앞서 표시한 금액은 사용하지 않습니다. 저장을 바꾸지 말고 다시 열어 확인하세요.</p>';delete d.dataset.signature;}}
   if(v?.blocked){receiptText='';receiptState=null;$('#casual-receipt')?.remove();$('#unlock-area')?.replaceChildren();mode='play';const d=$('#casual-dashboard');if(d){d.innerHTML='<p class="c-warning">저장·현황 확인이 중단되어 금액을 표시하지 않습니다. 아래 오류 안내를 확인하세요.</p>';delete d.dataset.signature;}v=null;}
@@ -234,7 +257,7 @@ function render(){
       receiptText=`선택 반영 · ${v.month} · 현금 ${delta===0?'변화 없음':(delta>0?'+':'')+won(delta)}${debt?` · 미납 ${debt>0?'+':''}${won(debt)}`:''}`;
     }
     receiptState={signature,cash:v.cash,unpaid:v.unpaid};
-    const batch=window.__returnAllocationReceipt?.();if(batch&&batch.decisionTurn===v.turnCount)receiptText=batch.month+' · '+batch.lines.length+'건 즉시 반영 · 매매 직후 현금 '+won(batch.cashAfter)+'. 이후 월 정산은 아래 현재 자산에 반영됩니다.';
+    const batch=window.__returnAllocationReceipt?.();if(batch&&batch.decisionTurn===v.turnCount)receiptText=batch.month+' · '+(batch.lines.length?batch.lines.length+'건 즉시 매매':'미납 자동상환')+' · 처리 직후 현금 '+won(batch.cashAfter)+(batch.repay!=null?' · 미납상환 '+won(batch.repay)+' · 남은 미납 '+won(batch.unpaidAfter):'')+'. 이후 월 정산은 아래 현재 자산에 반영됩니다.';
     let r=$('#casual-receipt');if(receiptText){if(!r){r=el('p','c-receipt');r.id='casual-receipt';card.before(r);}r.textContent=receiptText;r.setAttribute('role','status');}
   }
   const chaosPreview=$('#chaos-preview');
@@ -257,6 +280,7 @@ function render(){
   const stage=$('#vn-stage');if(stage){stage.hidden=mode!=='play'||!v?.started||allocating;stage.classList.add('c-illustrated-scene');card.before(stage);}
   $$('.art-details').forEach(e=>e.hidden=mode!=='records');
   const importLink=$('main > p a[href="import.html"]');if(importLink)importLink.parentElement.hidden=true;
+  repaymentAccess(v);
   const status=$('#storage-scope-status');if(status){status.classList.add('c-save-status');const p=status.querySelector('p');if(p)p.hidden=mode!=='records';}
   // Clearly isolate optional historical experiment links from casual play.
   $$('#turn-card a[href*="economy="],#turn-card a[href*="start=classic"]').forEach(a=>a.parentElement.hidden=true);

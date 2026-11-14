@@ -42,3 +42,5 @@
 #turn-card:has(#allocation-panel){padding:16px 14px}#turn-card:has(#allocation-panel)>h2{font-size:23px;margin:8px 0 12px}#allocation-panel>.c-core-note{margin:6px 0;font-size:11px}#allocation-panel .allocation-row{padding:8px 0}#allocation-panel .allocation-row-head label{font-size:13px}#allocation-panel .allocation-row-values{font-size:10px}#allocation-panel .allocation-meta{font-size:12px}#allocation-panel .allocation-meta>strong{font-size:17px}
 
 .casual .c-topbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;box-sizing:border-box;width:100%}.casual .c-topbar a{min-width:0;font-size:10px}
+
+.casual .c-repayment-access{display:block;min-height:48px;width:100%;margin:12px 0;padding:10px 12px;border:1px solid #bca17b;border-radius:8px;background:#fff7e9;color:#704b20;font:inherit;font-size:13px;line-height:1.6;cursor:pointer}.casual #allocation-unpaid-help{font-size:12px!important}

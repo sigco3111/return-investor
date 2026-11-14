@@ -126,7 +126,7 @@ try {
   await send('Page.addScriptToEvaluateOnNewDocument',{source:'window.__testNativeStorage=window.localStorage;'});
 
   await send('Page.addScriptToEvaluateOnNewDocument',{source:'window.__testNativeStorage=window.localStorage;'});
-  const fs=await import('node:fs/promises');const gameMode=process.env.GAME_MODE||'casual';const isCasual=gameMode==='casual';const route=gameMode+'.html';
+  const fs=await import('node:fs/promises');const gameMode=process.env.GAME_MODE||'casual';const isCasual=gameMode==='casual';const route=gameMode+'.html'+(isCasual?'?edition=legacy':'');
   const errors=[];socket.addEventListener('message',event=>{const e=JSON.parse(event.data);if(e.method==='Runtime.exceptionThrown')errors.push(e.params.exceptionDetails.text);});
   const shot=async name=>{await frame();await frame();await fs.writeFile(evidenceDir+'/'+name+'-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})).data,'base64'));};
   await navigate(base);await frame();await shot('mode-choice');

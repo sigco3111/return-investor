@@ -208,6 +208,28 @@ function compactCapital(){
  for(const review of pf.querySelectorAll('.cash-events-review')){const d=disclosure(review,'현금사건 규칙 전체 보기');for(const n of [...review.children])if(n.tagName==='P'&&n!==d)d.append(n);}
  for(const property of pf.querySelectorAll('.property-panel')){const d=disclosure(property,'가격·계약 규칙 자세히');for(const n of [...property.children])if(n.tagName==='P')d.append(n);}
 }
+function openRepayment(){
+ const cancel=$('#allocation-cancel');if(cancel)cancel.click();
+ mode='capital';capitalGroup='cash';render();$('.c-capital-nav [data-group="cash"]')?.click();
+ requestAnimationFrame(()=>{const target=$('.career-repayment-preview')||$('.cash-events-review');target?.scrollIntoView({block:'start'});const b=$('#career-cash-repay');if(b){b.tabIndex=0;b.focus({preventScroll:true});}});
+}
+function repaymentAccess(v){
+ if(!v||v.blocked||v.unpaid<=0)return;
+ const add=(parent,id,label)=>{if(!parent||$('#'+id))return;const b=el('button','c-repayment-access',label);b.id=id;b.type='button';b.onclick=openRepayment;parent.append(b);};
+ add($('#casual-dashboard'),'casual-repay-shortcut','미납 '+won(v.unpaid)+' 확인·상환');
+ const panel=$('#allocation-panel');if(panel){
+  let n=$('#allocation-unpaid-help');if(!n){n=el('p','c-warning','미납이 있어 새 매수는 막혀 있습니다. 보유 비중을 줄이는 매도·해지만 가능합니다. 확정은 투자 판단1회를 쓰며, 이어지는 월의 생활비가 매도대금에서 먼저 빠질 수 있습니다. 상환은 현재 현금으로 별도 확인합니다.');n.id='allocation-unpaid-help';panel.prepend(n);}
+  add(n,'allocation-repay-shortcut','배분을 취소하고 미납 확인·상환');
+ }
+ const preview=$('.career-repayment-preview');if(preview){
+  const text=preview.textContent,none='지금은 납부 가능한 청구가 없습니다';
+  if(text.includes(none)){
+   const message=v.cash<=0?'미납 '+won(v.unpaid)+'이 있지만 지금 쓸 수 있는 현금이 없습니다.':'미납 '+won(v.unpaid)+'이 남아 있습니다. 현금 '+won(v.cash)+'으로는 가장 오래된 달의 남은 청구 전액을 낼 수 없습니다.';
+   const walk=document.createTreeWalker(preview,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode())if(n.nodeValue.includes(none))n.nodeValue=n.nodeValue.replace(none,message);
+  }
+  const b=$('#career-cash-repay');if(b&&text.includes(none)){b.disabled=true;b.textContent='현금 부족 · 지금 상환할 수 없음';}
+ }
+}
 function render(){
  if(!$('main'))return;observer?.disconnect();
  try{
@@ -257,6 +279,7 @@ function render(){
   const stage=$('#vn-stage');if(stage){stage.hidden=mode!=='play'||!v?.started||allocating;stage.classList.add('c-illustrated-scene');card.before(stage);}
   $$('.art-details').forEach(e=>e.hidden=mode!=='records');
   const importLink=$('main > p a[href="import.html"]');if(importLink)importLink.parentElement.hidden=true;
+  repaymentAccess(v);
   const status=$('#storage-scope-status');if(status){status.classList.add('c-save-status');const p=status.querySelector('p');if(p)p.hidden=mode!=='records';}
   // Clearly isolate optional historical experiment links from casual play.
   $$('#turn-card a[href*="economy="],#turn-card a[href*="start=classic"]').forEach(a=>a.parentElement.hidden=true);

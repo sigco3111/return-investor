@@ -35,6 +35,7 @@ function refreshDashboard(v,title){
  const signature=JSON.stringify([v,title]);if(dash.dataset.signature===signature)return;dash.dataset.signature=signature;
  const milestoneNames=['시작','진로','생활·투자','결산'];const phase=!v.started?0:v.ended?3:v.flags.career||v.flags.academicStatus==='college'||v.flags.militaryUntil?2:1;
  dash.innerHTML=`<div class="c-storyline"><span>${esc(v.month)} · ${esc(stageName(v))}</span><span>캐주얼</span></div><ol class="c-milestones" aria-label="이야기 흐름">${milestoneNames.map((n,i)=>`<li class="${i===phase?'is-current':i<phase?'is-past':''}" ${i===phase?'aria-current="step"':''}>${n}</li>`).join('')}</ol><div class="c-capital"><div><span>쓸 수 있는 현금</span><strong>${small(v.cash)}<small>원</small></strong></div><div><span>투자자산 평가</span><strong>${small(invested)}<small>${invested===null?'':'원'}</small></strong></div><div class="${v.unpaid>0?'is-debt':''}"><span>미납</span><strong>${small(v.unpaid)}<small>원</small></strong></div></div><div class="c-capital-foot"><span>예약·계약금 ${won(locked)} · 대기주문 ${v.orders.length}건</span><span>카오스 ${v.chaos.toFixed(1)}/100</span></div>${v.unpaid>0||v.ended?`<p class="c-net">미납 차감 후 순자산 <strong>${won(v.total-v.unpaid)}</strong></p>`:''}<details class="c-graph" ${v.started?'open':''}><summary>자산 변화 <strong>${won(v.total)}</strong></summary>${graph(v)}<details class="c-chart-basis"><summary>기준: 미납 별도 · 수익률 아님</summary><p class="c-chart-note">총자산 = 현금 + 보유평가 + 묶인 자금. 미납 차감 후 순자산 ${won(v.total-v.unpaid)}. 월별 게임 기록으로 수입·지출도 반영합니다. 미기록 월은 연결하지 않습니다.</p></details></details><a class="c-next-link" href="#turn-card">다음 판단 · ${esc(currentTitle)}</a><div class="c-dash-actions"><button type="button" data-c-menu="capital">자금·대기주문</button><button type="button" data-c-menu="records">기록·메뉴</button></div>`;
+ const profile=window.__returnProfileSummary?.();if(profile?.ok){const d=disclosure(dash,'시작 배경 · '+profile.startMonth,'c-chart-basis');const p=el('p','c-chart-note');p.textContent=profile.input.birth+' 출생 · '+({hs1:'고1',hs2:'고2',hs3:'고3',college1:'대학1학년',college2:'대학2학년',college3:'대학3학년',college4:'대학4학년',graduate:'대학 졸업',highGraduate:'고교 졸업·대학 미진학'}[profile.input.education])+' · 시작현금100만원. 선택한 배경이며 과거 플레이·월급·이자기록이 아닙니다.';d.append(p);}
  if(v.unpaid>0||v.chaos>=70){const warn=el('p','c-warning');warn.textContent=(v.unpaid>0?`미납 ${won(v.unpaid)}. 새 매수와 대기 매수 체결은 상환 전 보류됩니다. `:'')+(v.chaos>=70?`카오스 주의 ${v.chaos.toFixed(1)}/100. 한계100에서는 역사가 바뀝니다.`:'');dash.append(warn);}
  if(lastTotals&&lastTotals.month!==v.month){const delta=v.total-lastTotals.total;dash.dataset.delta=String(delta);}lastTotals={month:v.month,total:v.total};
 }
@@ -43,6 +44,7 @@ function compactCard(v){
  const card=$('#turn-card');const heading=card?.querySelector('h2');if(!card||!heading||card.__cProcessedHeading===heading)return;card.__cProcessedHeading=heading;card.dataset.cDone='yes';
  // When the engine redraws innerHTML, the old marker survives. Content identity
  // is checked separately by the observer before calling this function.
+ if(card.querySelector('#profile-form'))return;
  const title=card.querySelector('h2')?.textContent||'';
  const birth=!!$('#by');const pending=v?.pending;
  if(birth){
@@ -173,7 +175,7 @@ function decorateButtons(){
 }
 function shell(){
  const main=$('main');if(!main||$('#casual-topbar'))return;
- const top=el('div','c-topbar');top.id='casual-topbar';top.innerHTML='<a href="./">‹ 모드 선택</a><span>리턴: 회귀 투자자</span><a href="classic.html">클래식</a>';main.prepend(top);
+ const top=el('div','c-topbar');top.id='casual-topbar';top.innerHTML='<a href="./">‹ 모드 선택</a><span>리턴: 회귀 투자자</span><a href="advanced.html">어드밴스</a>';main.prepend(top);
  const h=$('header');if(h)h.classList.add('c-original-header');
  const pf=$('#portfolio');if(pf){const toggle=el('button','c-portfolio-close','자금 관리 닫기');toggle.id='casual-portfolio-close';toggle.type='button';toggle.onclick=()=>{mode='play';render();$('#casual-dashboard')?.scrollIntoView({block:'start'});};pf.before(toggle);pf.hidden=true;toggle.hidden=true;}
  const record=$('#record-copy');if(record){
@@ -248,15 +250,15 @@ function render(){
   compactCapital();
   for(const e of $$('#turn-card,#choices,#casual-choice-categories,#casual-story,#casual-risk,#casual-receipt'))e.hidden=mode!=='play';
   const pf=$('#portfolio');if(pf)pf.hidden=mode!=='capital';const close=$('#casual-portfolio-close');if(close)close.hidden=mode!=='capital';
-  const rm=$('#casual-record-menu');if(rm){rm.hidden=mode!=='records';const end=$('#casual-end-life');end.disabled=!$('#voluntary-end-open');}
+  const rm=$('#casual-record-menu');if(rm){if(!rm.querySelector('.c-profile-link')){const a=el('a','c-profile-link',window.__returnCasualEdition==='legacy'?'새 시작 규칙 보기 (현재 저장 보존)':'이전 캐주얼 저장 열기');a.href=window.__returnCasualEdition==='legacy'?'casual.html?edition=profile':'casual.html?edition=legacy';rm.append(a);}rm.hidden=mode!=='records';const end=$('#casual-end-life');end.disabled=!$('#voluntary-end-open');}
   for(const e of $$('#record-copy,.asset-license,#footnote'))e.hidden=mode!=='records';
-  const stage=$('#vn-stage');if(stage)stage.hidden=true;
+  const stage=$('#vn-stage');if(stage){stage.hidden=mode!=='play'||!v?.started;stage.classList.add('c-illustrated-scene');card.before(stage);}
   $$('.art-details').forEach(e=>e.hidden=mode!=='records');
   const importLink=$('main > p a[href="import.html"]');if(importLink)importLink.parentElement.hidden=true;
   const status=$('#storage-scope-status');if(status){status.classList.add('c-save-status');const p=status.querySelector('p');if(p)p.hidden=mode!=='records';}
   // Clearly isolate optional historical experiment links from casual play.
   $$('#turn-card a[href*="economy="],#turn-card a[href*="start=classic"]').forEach(a=>a.parentElement.hidden=true);
-  if(focusNext){focusNext=false;requestAnimationFrame(()=>{const h=$('#turn-card h2');if(h){h.tabIndex=-1;h.focus({preventScroll:true});$('#turn-card').scrollIntoView({block:'start',behavior:'instant'});}});}
+  if(focusNext){focusNext=false;requestAnimationFrame(()=>{const h=$('#turn-card h2');if(h){h.tabIndex=-1;h.focus({preventScroll:true});($('#vn-stage')||$('#turn-card')).scrollIntoView({block:'start',behavior:'instant'});}});}
  }finally{observer?.observe(document.body,{childList:true,subtree:true,characterData:true});}
 }
 function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;render();});}
@@ -285,7 +287,7 @@ export function installCasual(){
  document.documentElement.classList.add('casual');
  observer=new MutationObserver(schedule);const start=()=>{observer.observe(document.body,{childList:true,subtree:true,characterData:true});schedule();};if(document.body)start();else addEventListener('DOMContentLoaded',start,{once:true});
  document.addEventListener('click',e=>{
-  const leave=e.target.closest('a[href="./"],a[href="classic.html"]');
+  const leave=e.target.closest('a[href="./"],a[href="advanced.html"]');
   if(leave&&window.__returnStorageFlush){
    e.preventDefault();e.stopImmediatePropagation();
    void (async()=>{try{if(await window.__returnStorageFlush()!==true)throw Error('save-unconfirmed');location.href=leave.href;}catch{let warning=$('#casual-navigation-warning');if(!warning){warning=el('p','c-warning','저장 완료를 확인하지 못해 이동하지 않았습니다. 기록·메뉴에서 현재 사본을 보관한 뒤 아래 저장 안내를 확인하세요.');warning.id='casual-navigation-warning';$('#casual-topbar')?.after(warning);warning.setAttribute('role','alert');}}})();return;

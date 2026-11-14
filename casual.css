@@ -15,3 +15,30 @@
 .profile-form{display:grid;gap:12px}.profile-form label{display:grid;gap:6px;font-size:13px}.profile-form input,.profile-form select{box-sizing:border-box;min-width:0;width:100%;min-height:44px;border:1px solid #ccc4ba;border-radius:8px;padding:9px;background:#fff;color:#302b29;font:inherit}.profile-form details{padding:12px;border:1px solid #ddd5ca;border-radius:10px}.profile-form details label{margin-top:12px}#profile-result h3{font-size:19px;margin:24px 0 8px}#profile-result{overflow-wrap:anywhere}#profile-result[role=alert]{color:#805b37}#profile-summary{margin-top:20px;border-top:1px solid #ddd5ca;padding-top:10px}#profile-summary dl{display:grid;grid-template-columns:minmax(72px,1fr) minmax(0,2fr);gap:10px;font-size:13px;line-height:1.7}#profile-summary dt{color:#807a72}#profile-summary dd{margin:0}#profile-summary label{display:flex;gap:8px;font-size:13px;align-items:start;line-height:1.8}#profile-summary input{width:20px;height:20px;flex:none}
 
 .casual .profile-form label{margin:0}.casual .profile-form{gap:14px}.casual .c-topbar{gap:8px;max-width:100%;font-size:10px}.casual .c-topbar span{min-width:0;white-space:normal;overflow-wrap:anywhere;flex:1;text-align:center}.casual .profile-form input,.casual .profile-form select{max-width:100%}
+/* Instant allocation: one decision surface, no per-product navigation. */
+#allocation-panel{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+#allocation-panel .allocation-meta{padding:12px;background:#f5f3ee;border-radius:8px;margin:10px 0}
+#allocation-panel .allocation-meta>strong{float:right;font-size:18px}
+#allocation-panel .allocation-meta p{font-size:11px;color:#746c63;margin:5px 0 0}
+#allocation-panel .allocation-cash{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:12px 0;border-bottom:1px solid #ded9d1}
+#allocation-panel .allocation-cash strong{font-weight:500;color:#427568}
+#allocation-panel .allocation-row{padding:12px 0 8px;border-bottom:1px solid #e5e0d8}
+#allocation-panel .allocation-row-head,#allocation-panel .allocation-row-values{display:flex;justify-content:space-between;gap:10px;align-items:center}
+#allocation-panel .allocation-row-head label{font-weight:600;font-size:14px;margin:0;line-height:1.5}
+#allocation-panel .allocation-percent{font-size:18px;color:#427568;white-space:nowrap}
+#allocation-panel input[type=range]{display:block;width:100%;height:44px;min-height:44px;margin:0;accent-color:#568675}
+#allocation-panel .allocation-row-values{font-size:11px;color:#7a7168;flex-wrap:wrap}
+#allocation-panel .allocation-row-values>span:last-child{color:#427568}
+#allocation-panel .allocation-details{font-size:11px;color:#746d65;margin:3px 0 0}
+#allocation-panel .allocation-details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+#allocation-panel .allocation-details summary::before{content:'▸';margin-right:6px}
+#allocation-panel .allocation-status{padding:10px;background:#edf3ef;border-radius:8px;font-size:12px}
+#allocation-panel .allocation-error{color:#8d312a;background:#fff0ed;padding:10px;border-radius:8px}
+#allocation-panel .allocation-consent{display:flex;align-items:flex-start;gap:8px;min-height:44px;font-size:13px}
+#allocation-panel .allocation-consent input{margin-top:4px;min-width:18px;min-height:18px}
+#allocation-panel .c-core-note{font-size:11px;color:#756d65}
+.allocation-receipt{background:#edf3ef;border:1px solid #cddfd6;padding:12px;border-radius:10px;font-size:12px;line-height:1.7}
+
+#turn-card:has(#allocation-panel){padding:16px 14px}#turn-card:has(#allocation-panel)>h2{font-size:23px;margin:8px 0 12px}#allocation-panel>.c-core-note{margin:6px 0;font-size:11px}#allocation-panel .allocation-row{padding:8px 0}#allocation-panel .allocation-row-head label{font-size:13px}#allocation-panel .allocation-row-values{font-size:10px}#allocation-panel .allocation-meta{font-size:12px}#allocation-panel .allocation-meta>strong{font-size:17px}
+
+.casual .c-topbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;box-sizing:border-box;width:100%}.casual .c-topbar a{min-width:0;font-size:10px}

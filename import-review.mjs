@@ -11,7 +11,7 @@ try{
 if(selected.size>2_000_000)throw Error('copy-size-or-type');const expectedPointerRaw=localStorage.getItem(POINTER_KEY);const text=await selected.text();const manifest=await(await fetch('import-manifest.json')).json();const parsed=preflightCopy(text,manifest);
 if(parsed.activeSaveRaw===null)throw Error('active-required-for-first-import');
 status.textContent='원래 저장과 분리된 곳에서 게임 시작 검사를 하고 있습니다.';
-const zip=await(await fetch('1-news-data-gen142.json.gz')).arrayBuffer();const code=await(await fetch('import-validator.js')).text();
+const zip=await(await fetch('news-data-gen143.json.gz')).arrayBuffer();const code=await(await fetch('import-validator.js')).text();
 const validation=await validateEngineInIsolation({...parsed,payloadGzip:zip,engineCode:code});if(current!==revision)return;
 if(!validation.ok||validation.writesAttempted!==0||!validation.activeExact||!validation.archiveExact)throw Error(validation.reason||'engine-validation-failed');
 approved={parsed,expectedPointerRaw,revision:current};confirm.disabled=!supportsLocks;const h=document.createElement('h2');h.textContent='사본의 게임 시작 검사 통과';const dl=document.createElement('dl');for(const[name,value]of[['진행월',parsed.currentMonth],['완료 회귀',parsed.completedLives+'건'],['검사 범위','형식·자료 묶음·게임 시작'],['저장 변경','없음']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=name;dd.textContent=value;dl.append(dt,dd)}const caution=document.createElement('p');caution.className='warning';caution.textContent='아직 적용한 것이 아닙니다. 아래에서 별도로 확인하면 원래 저장을 그대로 두고 새 공간에 적용합니다. 이후 플레이 전체를 보장하지 않으므로 원본 파일을 보관해 주세요.';result.append(h,dl,caution);status.textContent=supportsLocks?'검사만 마쳤습니다. 원래 저장은 바꾸지 않았습니다.':'검사는 마쳤지만 이 브라우저는 안전 잠금이 없어 적용하지 않습니다. 원래 공간 게임은 계속 사용할 수 있습니다.';

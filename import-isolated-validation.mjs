@@ -10,7 +10,7 @@ export async function validateEngineInIsolation({activeSaveRaw,completedLivesRaw
  addEventListener('unhandledrejection',e=>tell({ok:false,scope:'engine-rejection',reason:String(e.reason?.message||e.reason)}));
  const receive = async e=>{
  if(e.source!==parent||e.data?.kind!=='return-validator-input'||e.data.nonce!==seedNonce)return;
- removeEventListener('message',receive);const input=e.data;input.payload=JSON.parse(await new Response(new Blob([input.payloadGzip]).stream().pipeThrough(new DecompressionStream('gzip'))).text());input.payload["data/prices.2026-11-14-gen140.json"]=input.payload["data/prices.json"];const map=new Map();
+ removeEventListener('message',receive);const input=e.data;input.payload=JSON.parse(await new Response(new Blob([input.payloadGzip]).stream().pipeThrough(new DecompressionStream('gzip'))).text());input.payload["data/prices.2026-11-14-gen140.json"]=input.payload["data/prices.json"];input.payload["data/prices.2026-11-14-gen141.json"]=input.payload["data/prices.json"];const map=new Map();
  map.set('regression-invest-school-calendar-save-v1',input.activeSaveRaw);
  if(input.completedLivesRaw!==null)map.set('regression-invest-school-calendar-lives-v1',input.completedLivesRaw);
  let writes=0;

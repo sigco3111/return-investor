@@ -123,7 +123,7 @@ try {
   assert.ok(Number.isInteger(width) && width >= 320 && width <= 1920, 'SMOKE_WIDTH must be an integer from 320 to 1920');
   await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false });
   await send('Page.addScriptToEvaluateOnNewDocument',{source:'window.__testNativeStorage=window.localStorage;'});
-  await navigate(base+'casual.html');await wait('#by');await frame();await frame();
+  await navigate(base+'casual.html?edition=legacy');await wait('#by');await frame();await frame();
   const fs=await import('node:fs/promises');
   
   await fs.writeFile(evidenceDir+'/first-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})).data,'base64'));
@@ -141,7 +141,7 @@ try {
   await click('#casual-order-edit');assert.equal(await state(),before,'edit does not mutate');
   await click('#order-execute');await click('#casual-order-confirm');await frame();await frame();console.log('FINAL',JSON.stringify(await evaluate('window.__returnCasualRead()')));
   assert.notEqual(await state(),before,'confirmed deposit executed');
-  const exact=await state();await navigate(base+'casual.html');await wait('#choices>button');await frame();await frame();assert.equal(await state(),exact,'reopen exact');
+  const exact=await state();await navigate(base+'casual.html?edition=legacy');await wait('#choices>button');await frame();await frame();assert.equal(await state(),exact,'reopen exact');
   await fs.writeFile(evidenceDir+'/deposit-result-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})).data,'base64'));
   console.log('BEFORE-SELL',await evaluate('document.querySelector("#turn-card").innerText'));
   await choice('리밸런싱');await wait('#casual-direction');await click('[data-direction="sell"]');await frame();await frame();

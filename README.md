@@ -57,6 +57,56 @@ Chrome을 자동으로 찾지 못하면 `CHROME_BIN`에 실행 파일 경로를 
 
 제한: 현재 진행이 없는 완료 기록 전용 사본, 알 수 없는 자료 묶음, 식별 없는 진행, 이전 완료 상세를 자동 요약하거나 완료 원문을 다시 작성해야 하는 사본은 가져오지 않습니다. 검사 통과는 모든 이후 플레이나 편집한 파일의 사실성을 보장하지 않습니다. 파일은 외부로 보내지 않고 메모리로 격리된 게임 시작·대시보드 검사와 원문 대조를 거칩니다.
 
-`npm run build`는 기존 실행본과 함께 `import-review.js`, `import-validator.js`를 생성합니다. `import.html`과 관련 소스도 같은 경로에 배포해야 합니다. `46-build-import.mjs`는 원래 엔진 소스를 바꾸지 않고 검사 전용 빌드를 만듭니다. 검증 후 실제 게임으로 계속 진행할 때는 원래 엔진을 사용합니다.
+기존 빌드 도구 `45-build-pages.mjs`와 `46-build-import.mjs`는 `import-review.js`, `import-validator.js`를 생성합니다. 현재 `npm run build`는 아래 캐주얼 전용 빌드입니다. `import.html`과 관련 소스도 같은 경로에 배포해야 합니다. `46-build-import.mjs`는 원래 엔진 소스를 바꾸지 않고 검사 전용 빌드를 만듭니다. 검증 후 실제 게임으로 계속 진행할 때는 원래 엔진을 사용합니다.
 
 원룸과 전업 서재는 2000년 이전 / 2000~2009년 / 2010년 이후의 허구 미술 6종을 추가로 사용합니다. 미술상 구분이며 실제 역사·장비 구입·자산·주택의 모습이나 보급 시점을 뜻하지 않습니다. 기존 공통 배경은 보존하며 새 이미지 로드 실패 시 공통 배경을 사용합니다. 게임 규칙·경제·자료는 그대로입니다.
+
+## Casual presentation
+
+The root entry lets the player choose the existing Classic game or Casual.
+Classic continues with its original browser storage and selected import slot.
+Casual uses a separate `return-casual.v1.` namespace, ignores the Classic import
+slot, and never automatically copies or converts another mode's save.
+
+The Classic source files, compiled assets and data are frozen in
+`classic-preserved-sha256.json`. `npm test` checks those bytes. `npm run build`
+builds only the Casual engine and UI; it does not overwrite the frozen Classic
+bundle or root mode chooser. Do not run the old `45-build-pages.mjs` as a release
+shortcut: it creates a Classic-only root page and must be reviewed separately.
+
+Casual reuses the same economic engine functions and data. Its read-only view
+projects current balances, pending funds, arrears, story stage and recorded asset
+history. Monthly asset history is a game accounting series, not an investment
+return, a reconstructed live market path or a forecast. Missing months are not
+joined. Arrears are kept separate and the dashboard shows arrears-adjusted net
+assets. Order submission remains separate from execution.
+
+The engine and presentation are compiled separately. A UI-only change must not
+change `2-casual.js`: engine function-source identifiers are used by saved games.
+Keep data and rule identifiers pinned. Unknown or mismatched saves must stop,
+never be silently migrated. All save-budget and atomic-write checks from the
+existing engine remain in the Casual namespace.
+
+The interface progressively reveals choices, preserves original controls and
+handlers, adds a review before a new order, and exposes full rules and sources
+through disclosures. It does not add products, income, loans, fills, fees,
+external accounts or paid services. The duration and fun of a human playthrough
+are a separate evaluation from automated correctness checks.
+
+### Casual regression checks
+
+`npm run test:casual-ui` uses temporary local Chrome profiles. Set `CHROME_BIN`
+if Chrome is not at a standard path. `CHROME_NO_SANDBOX=1` is for isolated CI
+environments only. `NO_LOCKS=1 node smoke-casual-boundary.mjs` also checks browsers
+without Web Locks. `SMOKE_WIDTH=320` or `1280` changes the viewport. Screenshots
+and diagnostic evidence are saved to a temporary directory, not this repository.
+The boundary test explicitly injects a synthetic affordability fixture to check
+home-contract locking and cancellation; it is not a claim of naturally earned cash.
+It also injects a write failure and checks that play stops and stale balances hide.
+`npm run test:casual-life` compares the same study/service/college/job route in
+both modes. Correctness checks do not establish ten-hour duration or human fun.
+
+`casual-engine-sha256.txt` pins the first Casual compiled engine. UI-only edits
+may rebuild the UI, but a changed engine hash fails release checks. An intentional
+economic or data change needs a reviewed save-preservation route before replacing
+this pin. Classic's original bundles remain separately byte-pinned.

@@ -44,7 +44,7 @@ function compactCard(v){
  const card=$('#turn-card');const heading=card?.querySelector('h2');if(!card||!heading||card.__cProcessedHeading===heading)return;card.__cProcessedHeading=heading;card.dataset.cDone='yes';
  // When the engine redraws innerHTML, the old marker survives. Content identity
  // is checked separately by the observer before calling this function.
- if(card.querySelector('#profile-form'))return;
+ if(card.querySelector('#profile-form,#allocation-panel'))return;
  const title=card.querySelector('h2')?.textContent||'';
  const birth=!!$('#by');const pending=v?.pending;
  if(birth){
@@ -234,6 +234,7 @@ function render(){
       receiptText=`선택 반영 · ${v.month} · 현금 ${delta===0?'변화 없음':(delta>0?'+':'')+won(delta)}${debt?` · 미납 ${debt>0?'+':''}${won(debt)}`:''}`;
     }
     receiptState={signature,cash:v.cash,unpaid:v.unpaid};
+    const batch=window.__returnAllocationReceipt?.();if(batch&&batch.decisionTurn===v.turnCount)receiptText=batch.month+' · '+batch.lines.length+'건 즉시 반영 · 매매 직후 현금 '+won(batch.cashAfter)+'. 이후 월 정산은 아래 현재 자산에 반영됩니다.';
     let r=$('#casual-receipt');if(receiptText){if(!r){r=el('p','c-receipt');r.id='casual-receipt';card.before(r);}r.textContent=receiptText;r.setAttribute('role','status');}
   }
   const chaosPreview=$('#chaos-preview');
@@ -248,11 +249,12 @@ function render(){
   // The original portfolio remains intact; opening this mode reveals all of its
   // management controls, including arrears, contract cancellation and orders.
   compactCapital();
-  for(const e of $$('#turn-card,#choices,#casual-choice-categories,#casual-story,#casual-risk,#casual-receipt'))e.hidden=mode!=='play';
+  for(const e of $$('#turn-card,#choices,#casual-choice-categories,#casual-story,#casual-risk,#casual-receipt'))e.hidden=mode!=='play'||!!$('#allocation-panel')&&['casual-receipt','casual-risk'].includes(e.id);
   const pf=$('#portfolio');if(pf)pf.hidden=mode!=='capital';const close=$('#casual-portfolio-close');if(close)close.hidden=mode!=='capital';
-  const rm=$('#casual-record-menu');if(rm){if(!rm.querySelector('.c-profile-link')){const a=el('a','c-profile-link',window.__returnCasualEdition==='legacy'?'새 시작 규칙 보기 (현재 저장 보존)':'이전 캐주얼 저장 열기');a.href=window.__returnCasualEdition==='legacy'?'casual.html?edition=profile':'casual.html?edition=legacy';rm.append(a);}rm.hidden=mode!=='records';const end=$('#casual-end-life');end.disabled=!$('#voluntary-end-open');}
+  const rm=$('#casual-record-menu');if(rm){if(!rm.querySelector('.c-profile-link')){const nav=el('div','c-profile-link');for(const[edition,label]of [['allocation','즉시 배분판 · 새 회귀/이어하기'],['profile','이전 생년월일판 저장'],['legacy','이전 고1 시작판 저장']]){if(edition===window.__returnCasualEdition)continue;const a=el('a','',label);a.href='casual.html?edition='+edition;a.style.display='block';a.style.minHeight='44px';nav.append(a);}rm.append(nav);}rm.hidden=mode!=='records';const end=$('#casual-end-life');end.disabled=!$('#voluntary-end-open');}
   for(const e of $$('#record-copy,.asset-license,#footnote'))e.hidden=mode!=='records';
-  const stage=$('#vn-stage');if(stage){stage.hidden=mode!=='play'||!v?.started;stage.classList.add('c-illustrated-scene');card.before(stage);}
+  const allocating=!!$('#allocation-panel');if(allocating){const area=$('#unlock-area');if(area)area.hidden=true;}else{const area=$('#unlock-area');if(area)area.hidden=mode!=='play';}const dash=$('#casual-dashboard');if(dash&&allocating)dash.hidden=true;
+  const stage=$('#vn-stage');if(stage){stage.hidden=mode!=='play'||!v?.started||allocating;stage.classList.add('c-illustrated-scene');card.before(stage);}
   $$('.art-details').forEach(e=>e.hidden=mode!=='records');
   const importLink=$('main > p a[href="import.html"]');if(importLink)importLink.parentElement.hidden=true;
   const status=$('#storage-scope-status');if(status){status.classList.add('c-save-status');const p=status.querySelector('p');if(p)p.hidden=mode!=='records';}
@@ -295,7 +297,7 @@ export function installCasual(){
   const menu=e.target.closest('[data-c-menu]');if(menu){mode=mode===menu.dataset.cMenu?'play':menu.dataset.cMenu;render();if(mode==='capital')$('#portfolio')?.scrollIntoView({block:'start'});if(mode==='records')$('#casual-record-menu')?.scrollIntoView({block:'start'});return;}
   const b=e.target.closest('button');if(!b)return;
   const v=window.__returnCasualRead?.();
-  if(b.parentElement?.id==='choices'&&!v?.pending&&!b.disabled&&/이 뉴스에 대응해|리밸런싱 \(비중 조정\)/.test(b.dataset.cOriginal||b.textContent)&&!b.__directionArmed){
+  if(window.__returnCasualEdition!=='allocation'&&b.parentElement?.id==='choices'&&!v?.pending&&!b.disabled&&/이 뉴스에 대응해|리밸런싱 \(비중 조정\)/.test(b.dataset.cOriginal||b.textContent)&&!b.__directionArmed){
    e.preventDefault();e.stopImmediatePropagation();chooseDirection(b);return;
   }
   if(b.__directionArmed)delete b.__directionArmed;

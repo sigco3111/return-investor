@@ -147,6 +147,15 @@ const allocationBaseBirth=renderBirthSelect;
 renderBirthSelect=function(){allocationBaseBirth();const review=document.getElementById('profile-review'),oldReview=review?.onclick;if(review)review.onclick=()=>{oldReview();const dl=document.querySelector('#profile-summary dl');if(dl){for(const dt of dl.querySelectorAll('dt'))if(dt.textContent==='첫 투자')dt.nextElementSibling.textContent='여러 금융상품을 한 묶음으로 확보자료가격에 즉시 매수·매도. 묶음당 판단1회, 알바는 월1회, 취업은 분기 검토, 복무 매수합계30% 상한. 주택은 별도 계약.';}};const root=document.getElementById('profile-form');if(root){const n=allocationNode('p','c-core-note','새 즉시 배분판: 여러 금융상품을 한 묶음으로 확정하면 투자 판단1회입니다. 확보된 자료가격으로 매도 후 매수하며 중간에 시간이 흐르지 않습니다. 주택은 별도 계약입니다. 기존 판의 저장은 자동으로 바꾸지 않습니다.');root.prepend(n);}const link=allocationNode('p','c-core-note');link.innerHTML='<a href="casual.html?edition=profile">이전 생년월일판 저장 열기</a>';document.getElementById('turn-card').append(link);};
 
 function allocationPresentation(){
+ const blocked=storageReadBlocked||storageWriteBlocked||multiTabConflict||window.__returnStorageHalted;
+ const unlock=document.getElementById('unlock-area');if(blocked){unlock?.replaceChildren();document.getElementById('casual-receipt')?.remove();}
+ else for(const e of unlock?.querySelectorAll('.unlock-banner')||[]){
+  if(!e.textContent.includes('체결'))continue;
+  let text=e.textContent.replace(/\s*\[[^\]]*지연체결[^\]]*\]/g,' [확보자료가격 즉시 체결 게임 모형]').replace(/가격 기준일\([^)]*\)이 접수 후 관측게이트\([^)]*\)보다 과거예요 \[시연 가정\]\./g,'').replace('적립 예약 체결:','월 자동매수 즉시 반영:');
+  const cut=text.indexOf(' · 관측게이트와 실제 주문일');if(cut>=0)text=text.slice(0,cut)+' [확보자료가격 즉시 체결 게임 모형]';
+  e.textContent=text;
+ }
+
  for(const area of document.querySelectorAll('#turn-card,#portfolio,#choices')){
   const walker=document.createTreeWalker(area,NodeFilter.SHOW_TEXT);let n;
   while(n=walker.nextNode()){

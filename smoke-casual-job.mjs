@@ -125,7 +125,7 @@ try {
   await send('Page.addScriptToEvaluateOnNewDocument',{source:'window.__testNativeStorage=window.localStorage;'});
 
   await send('Page.addScriptToEvaluateOnNewDocument',{source:'window.__testNativeStorage=window.localStorage;'});
-  const fs=await import('node:fs/promises');const gameMode=process.env.GAME_MODE||'casual';const isCasual=gameMode==='casual';const route=gameMode+'.html';
+  const fs=await import('node:fs/promises');const gameMode=process.env.GAME_MODE||'casual';const isCasual=gameMode==='casual';const route=gameMode+'.html'+(isCasual?'?edition=legacy':'');
   const errors=[];socket.addEventListener('message',event=>{const e=JSON.parse(event.data);if(e.method==='Runtime.exceptionThrown')errors.push(e.params.exceptionDetails.text);});
   await navigate(base+route);await wait('#by');await frame();await frame();
   const nativeSnapshot=()=>evaluate('Object.fromEntries(Object.keys(window.__testNativeStorage).filter(k=>!k.startsWith("return-casual.v1.")).sort().map(k=>[k,window.__testNativeStorage.getItem(k)]))');

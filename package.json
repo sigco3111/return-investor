@@ -2,11 +2,11 @@
   "name": "return-investor",
   "version": "0.0.1",
   "private": true,
-  "description": "\ub9ac\ud134: \ud68c\uadc0 \ud22c\uc790\uc790 \uc815\uc801 \uc6f9 \uac1c\ubc1c\ud310",
+  "description": "리턴: 회귀 투자자 정적 웹 개발판",
   "scripts": {
     "test": "node check-asset-review.js && node check-product-lifecycle.js && node check-fictional-ledger.js && node check-save-shape.js && node check-casual-release.mjs",
     "check": "node --check engine.js && node --check asset-review.js && node --check economy-policy.js && node --check product-lifecycle.js && node --check fictional-ledger.js",
-    "build": "node build-casual.mjs && node check-casual-release.mjs",
+    "build": "node build-casual.mjs && RETURN_PROFILE_BUILD=1 node build-casual.mjs && node check-casual-release.mjs && node check-profile-plan.mjs",
     "serve": "python3 -m http.server 8080",
     "test:casual-ui": "node smoke-casual-boundary.mjs && node smoke-casual-trade-sell.mjs && node smoke-casual-edge.mjs && node smoke-casual-job.mjs",
     "test:casual-life": "GAME_MODE=classic node smoke-casual-life.mjs && GAME_MODE=casual node smoke-casual-life.mjs"

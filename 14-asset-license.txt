@@ -36,3 +36,5 @@ retain their separately stated licensing status.
 
 
 Dated SPY/FXI fund net-asset observations are public financial filing data with exact primary-source attribution in fund-scale-data.mjs. They are not licensed by this game under MIT. Game concentration proxy only, not a real market-impact model. User approval to publish does not establish third-party permission. First global publication and historically available Korean retail access are not established.
+
+The generated webtoon concept and the three room-ledger-opening-job layers (including their WebP delivery copies) embedded as image data in return-story-ui-20261115.js are also covered by this MIT art license. No external market data is relicensed.
